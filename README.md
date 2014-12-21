@@ -65,7 +65,7 @@ Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'alert', 'effect'
 ### hue_transitionTime
 This parameter specifies the time, which the lamp take to reach the a newly set value. This parameter is optional. If not set the time default is 0.1 second. 
 
-## Using DPT3 dimming
+### Using DPT3 dimming
 If you use a DPT3 dimmer, you have to specify a subitem to the dimmed hue item. To this subitem you link the knx DPT3 part. You can control the dimming via some parameters, which have to be specified in this subitem.
 If you are using the DPT3 dimmer, please take into account that there is a lower limit of timing. A lower value than 0.2 seconds should be avoided, regarding the performance of the overall system. 
 Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. In that case, the lamp interpolates the transition as quick as the steps of the dimmfunction happen.   
