@@ -63,12 +63,14 @@ Specifies the attribute which is updated on a scheduled timer from the lamp.
 Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'alert', 'effect', 'reachable'
 
 ### hue_transitionTime
-This parameter specifies the time, which the lamp take to reach the a newly set value. This parameter is optional. If not set the time default is 0.1 second. 
+This parameter specifies the time, which the lamp take to reach the a newly set value. This is done by interpolation of the values inside the lamp. This parameter is optional. If not set the time default is 0.1 second. 
 
 ### Using DPT3 dimming
 If you use a DPT3 dimmer, you have to specify a subitem to the dimmed hue item. To this subitem you link the knx DPT3 part. You can control the dimming via some parameters, which have to be specified in this subitem.
 If you are using the DPT3 dimmer, please take into account that there is a lower limit of timing. A lower value than 0.2 seconds should be avoided, regarding the performance of the overall system. 
-Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. In that case, the lamp interpolates the transition as quick as the steps of the dimmfunction happen.   
+Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. In that case, the lamp interpolates the transition as quick as the steps of the dimmer function happen.
+If the lamp is set to off (e.g. attribute 'on' = False), changes could be not written to the lamp. Warnings in the log will appear. The lamp doesn't support this behaviour. In case of starting dimming the brigthness of the lamp, the
+plugin automatically sets the lamp on and starts dimming with the last value.     
 
 ### hue_dim_max
 Parameter which determines the maximum of the dimmer range.
