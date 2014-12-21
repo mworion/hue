@@ -36,16 +36,16 @@ class HUE():
         # hier werden alle bekannte items für lampen eingetragen
         self._sendItems = {}
         self._listenItems = {}
-        
+        # locks für die absicherung
         self._lampslock = threading.Lock()
-     
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
         self._sendKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert']
         # hier ist die liste der einträge, für die ein dimmer DPT3 gesetzt werden kann
         self._dimmKeys = ['bri', 'sat', 'hue']
-   
+
+        # Konfigurationen zur laufzeit
         # scheduler für das polling der status über die hue bridge
         self._sh.scheduler.add('hue-update', self._update_lamps, cycle=cycle)
         # anstossen des updates zu beginn
@@ -60,10 +60,10 @@ class HUE():
         self.alive = False
 
     def parse_item(self, item):
-        # nur wenn eine hue id angegeben ist, wird referenziert, sonst ist die lmape ja nicht bekannt
-        for itemChild in self._sh.find_children(item, 'hue_dim_max'):
-            itemChild.add_method_trigger(self._dimmenDPT3)
         if 'hue_id' in item.conf:
+            # nur wenn eine hue id angegeben ist, wird referenziert, sonst ist die lmape ja nicht bekannt
+            for itemChild in self._sh.find_children(item, 'hue_dim_max'):
+                itemChild.add_method_trigger(self._dimmenDPT3)
             #auswertung und setzen der transition time der hue bridge
             if 'hue_transitionTime' in item.conf:
                 transitionTime = float(item.conf['hue_transitionTime']) * 10.0
