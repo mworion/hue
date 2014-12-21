@@ -2,15 +2,17 @@
 # vim: set encoding=utf-8 tabstop=4 softtabstop=4 shiftwidth=4 expandtab
 #
 #  Copyright (C) 2014 Michael Würtenberger
+#  Version 0.5
+#  Erstanlage mit ersten Tests
+#  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
+#  Die Parametrierung des Plugings in der plugin.conf und die authorize() Methode wurden zur
+#  Wahrung der Kompatibilitaet uebernommen 
 #
 #  Basiert aus der API 1.0 der Philips hue API spezifikation, die man unter
 #  http://www.developers.meethue.com/documentation/lights-api finden kann
-#  Die Umsetzung des plugings verwaltet auch hue lamps, die nicht im netzwerk
-#  auftauchen (z.B. weil sie durch abschalten der Spannung nicht angemeldet sind)
-#  diese können dann explizit eingeschatet werden  
 #
-#  problem ist, dass die hue nach on / off zwar diue farbwerte und auch die sättigung hält, 
-#  aber die Helligkeit auf minimum setzt (0) 
+#  APL2.0
+# 
 
 import logging
 import json
@@ -260,7 +262,3 @@ class HUE():
         logger.debug(resp)
         return resp
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    myplugin = HUE('smarthome-dummy')
-    myplugin.run()

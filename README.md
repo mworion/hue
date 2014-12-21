@@ -1,5 +1,7 @@
 # Phillips HUE
 
+###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014
+
 # Requirements
 
 Needs httplib
@@ -42,56 +44,107 @@ Note: The hue bridge has no notification feature. Therefore changes can only be 
 
 ### hue_id
 
-Specify the lamp id. Via this parameter the hue connection
-is established. 
+Specify the lamp id. Via this parameter the hue connection is established. 
 
-The feature which is to be controlled is determined
-via the type of the item.
+### hue_send
+Specifies the attribute which is send to the lamp when this item is altered.
+Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'effect', 'alert'
+The value ranges of the items and the types are:
+'on': bool : False / True
+'bri': num : 0-255
+'sat': num : 0-255
+'hue': num : 0-65535
+'effect': str : 'none' or 'colorloop'
+'alert': dtr : 'none' or 'select' or 'lselect'
+Please refer to the specs of the API of the hue lamps. 
 
-type = bool - controls feature 'on' (switching lamp on/off)
+### hue_listen
+Specifies the attribute which is updated on a scheduled timer from the lamp.
+Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'alert', 'effect', 'reachable'
 
-type = num - controls feature 'bri' (brightness)
+### hue_transitionTime
+This parameter specifies the time, which the lamp take to reach the a newly set value. This parameter is optional. If not set the time default is 0.1 second. 
 
-type = dict - controls all features
+## Using DPT3 dimming
+If you use a DPT3 dimmer, you have to specify a subitem to the dimmed hue item. To this subitem you link the knx DPT3 part. You can control the dimming via some parameters, which have to be specified in this subitem.
+If you are using the DPT3 dimmer, please take into account that there is a lower limit of timing. A lower value than 0.2 seconds should be avoided, regarding the performance of the overall system. 
+Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. In that case, the lamp interpolates the transition as quick as the steps of the dimmfunction happen.   
 
-### hue_feature
+### hue_dim_max
+Parameter which determines the maximum of the dimmer range.
 
-Determines which feature to control. If this parameter is given, exactly that
-feature is controlled. You have to choose the item type accordingly.
+### hue_dim_step
+Parameter which determines the step size.
 
-hue_feature = hue - controls the hue. Type must be num
+### hue_dim_time
+Parameter which determines the time, the dimmer takes for making on step.
 
-hue_feature = effect - controls the effect. Type must be str.
-
-Special: hue_feature = all - controls all settings via dict.
-
-### Example
+## Example
 
 <pre>
-# items/my.conf
+# items/test.conf
+[keller]
+	[[hue]]
+    	[[[power]]]
+        	type = bool
+        	hue_id = 1
+        	hue_send = on
+        	hue_listen = on
+            knx_dpt = 1
+            knx_cache = 8/0/1
+    	[[[reachable]]]
+        	type = bool
+        	hue_id = 1
+        	hue_listen = reachable
+        [[[bri]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = bri
+        	hue_listen = bri
+        	hue_transitionTime = 0.5
+	       	[[[[dim]]]]
+	    		type = list
+	        	knx_dpt = 3
+	        	knx_cache = 8/0/2
+	        	hue_dim_max = 255
+	        	hue_dim_step = 5
+	        	hue_dim_time = 0.5
+        [[[sat]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = sat
+        	hue_listen = sat
+        [[[hue]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = hue
+        	hue_listen = hue
+        	hue_transitionTime = 0.5
+	       	[[[[dim]]]]
+	    		type = list
+	        	knx_dpt = 3
+	        	knx_cache = 8/0/12
+	        	hue_dim_max = 65535
+	        	hue_dim_step = 1000
+	        	hue_dim_time = 0.5
+        [[[effect]]]
+        	type = str
+        	hue_id = 1
+        	hue_send = effect
+        	hue_listen = effect
+        [[[alert]]]
+        	type = str
+        	hue_id = 1
+        	hue_send = alert
+        	hue_listen = alert
 
-[someroom]
-    [[mydevice]]
-        type = bool
-        hue_id = 1
-    [[[level]]]
-        type = num
-        hue_id = 1
-    [[[effect]]]
-        type = str
-        hue_id = 1
-        hue_feature = effect
-    [[[all]]]
-        type = dict
-        hue_id = 1
-        hue_feature = all
 </pre>
-
-Hint: on and bri are currently coupled, like a KNX dimmer.
 
 ## logic.conf
 No logic attributes.
-
 
 # Methodes
 
