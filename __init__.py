@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # vim: set encoding=utf-8 tabstop=4 softtabstop=4 shiftwidth=4 expandtab
 #
-#  Copyright (C) 2014 Michael Würtenberger
-#  Version 0.5
+#  Copyright (C) 2014,2015 Michael Würtenberger
+#  Version 0.6
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
 #  Die Parametrierung des Plugings in der plugin.conf und die authorize() Methode wurden zur
-#  Wahrung der Kompatibilitaet uebernommen 
+#  Wahrung der Kompatibilitaet uebernommen
+# 
+#  Umsetzung rgb mit aufgenommen, basiert auf der einwegumrechnung von
+#  https://github.com/benknight/hue-python-rgb-converter 
 #
 #  Basiert aus der API 1.0 der Philips hue API spezifikation, die man unter
 #  http://www.developers.meethue.com/documentation/lights-api finden kann
@@ -19,13 +22,14 @@ import json
 import http.client
 import time
 import threading
-#import pydevd
+import pydevd
+from lib.rgb_cie import Converter, XYPoint
 
 logger = logging.getLogger('')
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip='Philips-hue', hue_user=None, hue_port=80, cycle=10):
+    def __init__(self, smarthome, hue_ip='Philips-hue', hue_user=None, hue_port=80, cycle=3):
 
 #        pydevd.settrace('192.168.2.57')        
         # parameter zu übergabe aus der konfiguration pulgin.conf
@@ -41,15 +45,20 @@ class HUE():
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
-        self._sendKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert']
+        self._sendKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für die ein dimmer DPT3 gesetzt werden kann
         self._dimmKeys = ['bri', 'sat', 'hue']
+        # hier ist die liste der einträge, für rgb gesetzt werden kann
+        self._rgbKeys = ['col_r', 'col_g', 'col_b']
 
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status über die hue bridge
         self._sh.scheduler.add('hue-update', self._update_lamps, cycle=cycle)
         # anstossen des updates zu beginn
         self._sh.trigger('hue-update', self._update_lamps)
+        
+        # konvertierung rgb nach cie xy
+        self._rgbConverter = Converter()
 
     def run(self):
         self.alive = True
@@ -61,6 +70,7 @@ class HUE():
 
     def parse_item(self, item):
         if 'hue_id' in item.conf:
+#            logger.warning('Parsen: {0}'.format(item.conf['hue_id']))
             # nur wenn eine hue id angegeben ist, wird referenziert, sonst ist die lmape ja nicht bekannt
             for itemChild in self._sh.find_children(item, 'hue_dim_max'):
                 itemChild.add_method_trigger(self._dimmenDPT3)
@@ -122,15 +132,33 @@ class HUE():
                 else:
                     value = int(value)
             # da die hue den helligkeitswert bei on / off vergisst, setze ich den nach on wieder auf den wert, den ich ursprünglich hatte
-            # wichtig dabei ist, dass bei brighness cache = on gesetzt wird.
+            # wichtig dabei ist, dass bei brighness cache = on gesetzt wird, damit ich den alten wert nicht vergesse !
             if (item.conf['hue_send'] == 'on') and (item.conf['hue_id'] + 'bri' in self._sendItems):
-                # dann wird auch gleich dir bri mit gesetzt
-                self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value, 'bri': int(self._sendItems[(item.conf['hue_id']+ 'bri')]()) ,'transitiontime': item.transitionTime})
+                #jetzt noch überprüfen, ob die lampe an oder aus geschaltet wird
+                if value:
+                    # die lampe st eingeschaltet worden, daher wird ein ein und der wert von bri geschickt
+                    self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value, 'bri': int(self._sendItems[(item.conf['hue_id']+ 'bri')]()) ,'transitiontime': item.transitionTime})
+                else:
+                    # die lampe ist geschaltet worden, daher wird nur ein aus geschickt
+                    self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value,'transitiontime': item.transitionTime})
                 
-            elif (item.conf['hue_send'] == 'bri') and (item.conf['hue_id'] + 'on' in self._sendItems):
+            elif (item.conf['hue_send'] == 'bri'):
                 # wenn ich dir brightness hochdimme und on = False, dann mache ich die lampe auch an !
-                self._set_state(item.conf['hue_id'], {'on': True , item.conf['hue_send']: value, 'transitiontime': item.transitionTime})
-                
+                if self._sendItems[(item.conf['hue_id']+ 'on')]():
+                    # ich dimme hoch, aber die Lmape ist aus
+                    # dann setze ich auch gleich lampe = an
+                    self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value, 'transitiontime': item.transitionTime})
+                else:
+                    # ansonsten setze ich nur den wert
+                    self._set_state(item.conf['hue_id'], {'on': True , item.conf['hue_send']: value, 'transitiontime': item.transitionTime})
+            # jetzt kommen noch die befehle zur umrechnung RGB nach cie xy. diese gehen aber nur in senderichtung
+            elif item.conf['hue_send'] in self._rgbKeys:
+                # wen die lampe an ist, dann setze ich das um
+                if self._sendItems[(item.conf['hue_id']+ 'on')]():
+                    # umrechnung
+                    xyPoint = self._rgbConverter.rgbToCIE1931(self._sendItems[(item.conf['hue_id']+ 'col_r')](),self._sendItems[(item.conf['hue_id']+ 'col_g')](),self._sendItems[(item.conf['hue_id']+ 'col_b')]())
+                    # und jetzt der wert setzen
+                    self._set_state(item.conf['hue_id'], {'xy': xyPoint, 'transitiontime': item.transitionTime})                
             else:
                 # ansonsten nur den wert
                 self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value, 'transitiontime': item.transitionTime})
@@ -139,16 +167,21 @@ class HUE():
         #das ist die methode, die die DPT3 dimmnachrichten auf die dimmbaren hue items mapped
         # fallunterscheidung dimmen oder stop
         if caller != 'HUE':
+            # auswertung der list werte für die KNX daten
+            # [1] steht für das dimmen
+            # [0] für die richtung
+            # es wird die fading funtion verwendet
             if item()[1] == 1:
                 #dimmen
                 if item()[0] == 1:
                     # hoch
-                    item.return_parent().fade(float(item.conf['hue_dim_max']), float(item.conf['hue_dim_step']), float(item.conf['hue_dim_time']))
+                    item.return_parent().fade(int(item.conf['hue_dim_max']), float(item.conf['hue_dim_step']), float(item.conf['hue_dim_time']))
                 else:
                     #runter
                     item.return_parent().fade(0, float(item.conf['hue_dim_step']), float(item.conf['hue_dim_time']))
             else:
-                #stop, indem man einen wert setzt. da es nicht der gleiche wert sein darf, erst einmal +1, dann -1
+                # stop, indem man einen wert setzt. da es nicht der gleiche wert sein darf, erst einmal +1, dann -1
+                # das ist aus meiner sicht noch ein fehler in item.py
                 item.return_parent()(int(item.return_parent()()+1),'HUE_FADE')
                 item.return_parent()(int(item.return_parent()()-1),'HUE_FADE')
                     
@@ -161,7 +194,7 @@ class HUE():
 
         # rückmeldung 200 ist OK
         if responseRaw.status != 200:
-            logger.error('Request failed')
+            logger.error('_request: response Raw: Request failed')
             return None
         # lesen, decodieren nach utf-8 (ist pflicht nach der api definition philips) und in ein python objekt umwandeln
         responseJson = responseRaw.read().decode('utf-8')
@@ -169,11 +202,11 @@ class HUE():
         # fehlerauswertung der rückmeldung, muss noch vervollständigt werden
         if isinstance(response, list) and response[0].get('error', None):
             error = response[0]["error"]
+            description = error['description']
             if error['type'] == 1:
-                description = error['description']
-                logger.error('Error: {0} (Need to specify correct hue user?)'.format(description))
+                logger.error('_request: Error: {0} (Need to specify correct hue user?)'.format(description))
             else:
-                logger.error(error['description'])
+                logger.error('_request: Error: {0}'.format(description))
             return None
         else:
             return response
@@ -183,32 +216,31 @@ class HUE():
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen
         returnValues = self._request("/lights/%s/state" % hueLampId,"PUT", json.dumps(state))
         if returnValues == None:
-            logger.warning('hue set state: keine return values')
+            logger.warning('hue_set_state - returnValues None')
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
-        self._lampslock.acquire()   
         for hueObject in returnValues:
             for hueObjectStatus, hueObjectReturnString in hueObject.items():
                 if hueObjectStatus == 'success':
-                    for hueObjectReturnStringPath, hueObjectReturnStringValue in hueObjectReturnString.items():
-                        hueObjectReturnStringPathItem = hueObjectReturnStringPath.split('/')[4]
-                        # hier werden jetzt die bestätigten werte aus der rückübertragung im item gesetzt
-                        # wir gehen durch alle listen items, um die zuordnung zu machen
-                        for returnItem in self._listenItems:
-                            # wenn ein listen item angelegt wurde und dafür ein status zurückkam
-                            #verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
-                            if returnItem == (hueLampId + hueObjectReturnStringPathItem):
-                                # dafür wir der reale wert der hue bridge gesetzt
-                                if returnItem == (hueLampId + 'on'):
-                                    value = bool(hueObjectReturnStringValue)
-                                elif (returnItem == (hueLampId + 'effect')) or (returnItem == (hueLampId + 'alert')):
-                                    value = str(hueObjectReturnStringValue)
-                                else:
-                                    value = float(hueObjectReturnStringValue)
-                                self._listenItems[returnItem](value,'HUE')
+                    pass
+#                    for hueObjectReturnStringPath, hueObjectReturnStringValue in hueObjectReturnString.items():
+#                       hueObjectReturnStringPathItem = hueObjectReturnStringPath.split('/')[4]
+#                       # hier werden jetzt die bestätigten werte aus der rückübertragung im item gesetzt
+#                       # wir gehen durch alle listen items, um die zuordnung zu machen
+#                       for returnItem in self._listenItems:
+#                           # wenn ein listen item angelegt wurde und dafür ein status zurückkam
+#                           #verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
+#                           if returnItem == (hueLampId + hueObjectReturnStringPathItem):
+#                               # dafür wir der reale wert der hue bridge gesetzt
+#                               if returnItem == (hueLampId + 'on'):
+#                                   value = bool(hueObjectReturnStringValue)
+#                               elif (returnItem == (hueLampId + 'effect')) or (returnItem == (hueLampId + 'alert')):
+#                                   value = str(hueObjectReturnStringValue)
+#                               else:
+#                                   value = int(hueObjectReturnStringValue)
+#                               self._listenItems[returnItem](value,'HUE')
                 else:
-                    logger.warning('hue: {0}: {1}'.format(hueObjectStatus, hueObjectReturnString))
-        self._lampslock.release()
+                    logger.warning('hue_set_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
         return
 
     def _update_lamps(self):
@@ -234,13 +266,19 @@ class HUE():
                         elif (returnItem == (hueLampId + 'effect')) or (returnItem == (hueLampId + 'alert')):
                             value = str(hueObjectItemValue)
                         else:
-                            value = float(hueObjectItemValue)
+                            value = int(hueObjectItemValue)
                         # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
                         if not self._listenItems[returnItem]._fading:
-                            self._listenItems[returnItem](value,'HUE')
+                            # es werden nur die Einträge zurückgeschrieben, falls die Lampe on 0 true ist
+                            # ausschliesslich der 'on' Zustand und 'reachable' werden immer gesetzt 
+                            if self._listenItems[(hueLampId + 'on')]() or (returnItem == (hueLampId + 'on')) or (returnItem == (hueLampId + 'reachable')):
+                                self._listenItems[returnItem](value,'HUE')
         self._lampslock.release()
         return
-
+    #
+    # die routine zu authorize ist 1:1 aus dem alten Plugin übernommen worden
+    # der autor ist mir leider nicht bekannt
+    #
     def authorizeuser(self):
         data = json.dumps(
             {"devicetype": "smarthome", "username": self._hue_user})
@@ -251,7 +289,7 @@ class HUE():
         con.close()
 
         if resp.status != 200:
-            logger.error("Authenticate request failed")
+            logger.error('authorize: Authenticate request failed')
             return "Authenticate request failed"
 
         resp = resp.read()

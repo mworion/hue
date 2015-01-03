@@ -1,10 +1,15 @@
 # Phillips HUE
 
-###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014
+###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
+version 0.6
+
+# rgb is included !!! please read carefully !
+
+Please install from https://github.com/benknight/hue-python-rgb-converter the file rgb_cie.py to your smarthome.py lib directory ! Otherwise it will fail !
 
 # Requirements
 
-Needs httplib
+Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter
 
 ## Supported Hardware
 
@@ -82,9 +87,8 @@ Parameter which determines the step size.
 Parameter which determines the time, the dimmer takes for making on step.
 
 ## Example
-
-<pre>
 # items/test.conf
+<pre>
 [keller]
 	[[hue]]
     	[[[power]]]
@@ -118,6 +122,21 @@ Parameter which determines the time, the dimmer takes for making on step.
         	hue_id = 1
         	hue_send = sat
         	hue_listen = sat
+        [[[col_r]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = col_r
+        [[[col_g]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = col_g
+        [[[col_b]]]
+        	type = num
+        	cache = on
+        	hue_id = 1
+        	hue_send = col_b
         [[[hue]]]
         	type = num
         	cache = on
@@ -128,7 +147,7 @@ Parameter which determines the time, the dimmer takes for making on step.
 	       	[[[[dim]]]]
 	    		type = list
 	        	knx_dpt = 3
-	        	knx_cache = 8/0/12
+	        	knx_listen = 8/0/12
 	        	hue_dim_max = 65535
 	        	hue_dim_step = 1000
 	        	hue_dim_time = 0.5
@@ -143,6 +162,28 @@ Parameter which determines the time, the dimmer takes for making on step.
         	hue_send = alert
         	hue_listen = alert
 
+</pre>
+
+Please not that knx_cache is wrong in the old example for [[[dim]]], the right setting is knx_listen
+
+# visu block
+<pre>
+<div class="block">
+    <div class="set-2" data-role="collapsible-set" data-theme="c" data-content-theme="a" data-mini="true">
+        <div data-role="collapsible" data-collapsed="false">
+            <h3>Hue Lampe Entwicklungsplatz </h3>
+            <p style="text-align:left">	{{ basic.symbol('kg.1.1', 'kg.hue_01_01.reachable','', icon1~'it_wifi.png' ) }}
+            							{{ basic.rgb('kg.1.7', 'kg.hue_01_01.col_r', 'kg.hue_01_01.col_g', 'kg.hue_01_01.col_b', 0, 255,'',16) }}
+            							Alert: {{ basic.value('kg.1.2', 'kg.hue_01_01.alert') }}
+            							Effect:{{ basic.value('kg.1.3', 'kg.hue_01_01.effect') }}
+            </p>
+			<p style="text-align:left">	{{ device.dimmer('kg.1.4','Helligkeit','kg.hue_01_01.power', 'kg.hue_01_01.bri', 0, 255, 5) }}</p>      
+			<p style="text-align:left">	{{ device.dimmer('kg.1.5','Sättigung','','kg.hue_01_01.sat', 0, 255, 5) }}</p>
+			<p style="text-align:left">	{{ device.dimmer('kg.1.6','Farbe','','kg.hue_01_01.hue', 0, 65535, 100) }}</p>
+			
+        </div>
+    </div> 
+</div>
 </pre>
 
 ## logic.conf
