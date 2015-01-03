@@ -166,26 +166,6 @@ Parameter which determines the time, the dimmer takes for making on step.
 
 Please not that knx_cache is wrong in the old example for [[[dim]]], the right setting is knx_listen
 
-# visu block
-<pre>
-<div class="block">
-    <div class="set-2" data-role="collapsible-set" data-theme="c" data-content-theme="a" data-mini="true">
-        <div data-role="collapsible" data-collapsed="false">
-            <h3>Hue Lampe Entwicklungsplatz </h3>
-            <p style="text-align:left">	{{ basic.symbol('kg.1.1', 'kg.hue_01_01.reachable','', icon1~'it_wifi.png' ) }}
-            							{{ basic.rgb('kg.1.7', 'kg.hue_01_01.col_r', 'kg.hue_01_01.col_g', 'kg.hue_01_01.col_b', 0, 255,'',16) }}
-            							Alert: {{ basic.value('kg.1.2', 'kg.hue_01_01.alert') }}
-            							Effect:{{ basic.value('kg.1.3', 'kg.hue_01_01.effect') }}
-            </p>
-			<p style="text-align:left">	{{ device.dimmer('kg.1.4','Helligkeit','kg.hue_01_01.power', 'kg.hue_01_01.bri', 0, 255, 5) }}</p>      
-			<p style="text-align:left">	{{ device.dimmer('kg.1.5','Sättigung','','kg.hue_01_01.sat', 0, 255, 5) }}</p>
-			<p style="text-align:left">	{{ device.dimmer('kg.1.6','Farbe','','kg.hue_01_01.hue', 0, 65535, 100) }}</p>
-			
-        </div>
-    </div> 
-</div>
-</pre>
-
 ## logic.conf
 No logic attributes.
 
