@@ -22,8 +22,8 @@ import json
 import http.client
 import time
 import threading
-import pydevd
 from lib.rgb_cie import Converter, XYPoint
+#import pydevd
 
 logger = logging.getLogger('')
 
