@@ -4,9 +4,7 @@
 version 0.7 develop
 
 # rgb is included !!! please read carefully !
-
-Please install from https://github.com/benknight/hue-python-rgb-converter the file rgb_cie.py to your smarthome.py lib directory ! Otherwise it will fail !
-
+until submodules are realized the converter is included to the hue plugin directory
 # Requirements
 
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter
