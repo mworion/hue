@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-version 0.6
+version 0.7 develop
 
 # rgb is included !!! please read carefully !
 
@@ -61,11 +61,14 @@ The value ranges of the items and the types are:
 'hue': num : 0-65535
 'effect': str : 'none' or 'colorloop'
 'alert': dtr : 'none' or 'select' or 'lselect'
+'col_r': num : 0-255
+'col_g': num : 0-255
+'col_b': num : 0-255
 Please refer to the specs of the API of the hue lamps. 
 
 ### hue_listen
 Specifies the attribute which is updated on a scheduled timer from the lamp.
-Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'alert', 'effect', 'reachable'
+Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'alert', 'effect', 'reachable', 'type', 'name', 'modelid', 'swversion'
 
 ### hue_transitionTime
 This parameter specifies the time, which the lamp take to reach the a newly set value. This is done by interpolation of the values inside the lamp. This parameter is optional. If not set the time default is 0.1 second. 
@@ -161,6 +164,22 @@ Parameter which determines the time, the dimmer takes for making on step.
         	hue_id = 1
         	hue_send = alert
         	hue_listen = alert
+         [[[type]]]
+        	type = str
+        	hue_id = 1
+        	hue_listen = type
+         [[[name]]]
+        	type = str
+        	hue_id = 1
+        	hue_listen = name
+         [[[modelid]]]
+        	type = str
+        	hue_id = 1
+        	hue_listen = modelid
+         [[[swversion]]]
+        	type = str
+        	hue_id = 1
+        	hue_listen = swversion
 
 </pre>
 

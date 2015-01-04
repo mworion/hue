@@ -2,7 +2,7 @@
 # vim: set encoding=utf-8 tabstop=4 softtabstop=4 shiftwidth=4 expandtab
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
-#  Version 0.6
+#  Version 0.7 develop
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
 #  Die Parametrierung des Plugings in der plugin.conf und die authorize() Methode wurden zur
@@ -43,14 +43,19 @@ class HUE():
         # locks für die absicherung
         self._lampslock = threading.Lock()
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
-        self._listenKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert']
+        self._listenKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'swversion']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
         self._sendKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für die ein dimmer DPT3 gesetzt werden kann
         self._dimmKeys = ['bri', 'sat', 'hue']
         # hier ist die liste der einträge, für rgb gesetzt werden kann
         self._rgbKeys = ['col_r', 'col_g', 'col_b']
+        # hier ist die liste der einträge, für string
+        self._stringKeys = ['effect', 'alert', 'type', 'name', 'modelid', 'swversion']
+        # hier ist die liste der einträge, für string
+        self._boolKeys = ['on', 'reachable']
 
+        
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status über die hue bridge
         self._sh.scheduler.add('hue-update', self._update_lamps, cycle=cycle)
@@ -59,6 +64,7 @@ class HUE():
         
         # konvertierung rgb nach cie xy
         self._rgbConverter = Converter()
+#        self._update_lamps()
 
     def run(self):
         self.alive = True
@@ -158,7 +164,7 @@ class HUE():
                     # umrechnung
                     xyPoint = self._rgbConverter.rgbToCIE1931(self._sendItems[(item.conf['hue_id']+ 'col_r')](),self._sendItems[(item.conf['hue_id']+ 'col_g')](),self._sendItems[(item.conf['hue_id']+ 'col_b')]())
                     # und jetzt der wert setzen
-                    self._set_state(item.conf['hue_id'], {'xy': xyPoint, 'transitiontime': item.transitionTime})                
+                    self._set_state(item.conf['hue_id'], {'xy': xyPoint, 'transitiontime': item.transitionTime})
             else:
                 # ansonsten nur den wert
                 self._set_state(item.conf['hue_id'], {item.conf['hue_send']: value, 'transitiontime': item.transitionTime})
@@ -253,17 +259,24 @@ class HUE():
         # schleife über alle gefundenen lampen
         self._lampslock.acquire()
         for hueLampId, hueLampIdValues in returnValues.items():
-            # schleife über alle states in den lampen
-            for hueObjectItem, hueObjectItemValue in hueLampIdValues['state'].items():
-                # jetzt werden die werte herausgesucht
+            # schleife über alle rückmeldungen der lampen.
+            # jetzt muss ich etwas tricksen, da die states eine ebene tiefer als die restlichen infos der lampe liegen
+            # in den items ist das aber eine flache hierachie. um nur eine schleife darüber zu haben, baue ich mir ein
+            # entsprechendes dict zusammen. 'state' ist zwar doppelt drin, stört aber nicht, da auch auf unterer ebene.
+            dictOptimized = hueLampIdValues['state'].copy()
+            dictOptimized.update(returnValues[hueLampId].items())
+            # jetzt kann der durchlauf beginnen
+            for hueObjectItem, hueObjectItemValue in dictOptimized.items():
+                # nachdem alle objekte und werte auf die gleiche ebene gebracht wurden, beginnt die zuordnung
+                # vor hier an werden die ganzen listen items durchgesehen und die werte aus der rückmeldung zugeordnet
                 for returnItem in self._listenItems:
                     # wenn ein listen item angelegt wurde und dafür ein status zurückkam
                     #verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
                     if returnItem == (hueLampId + hueObjectItem):
                         # dafür wir der reale wert der hue bridge gesetzt
-                        if (returnItem == (hueLampId + 'on')) or (returnItem == (hueLampId + 'reachable')):
+                        if hueObjectItem in self._boolKeys:
                             value = bool(hueObjectItemValue)
-                        elif (returnItem == (hueLampId + 'effect')) or (returnItem == (hueLampId + 'alert')):
+                        elif hueObjectItem in self._stringKeys:
                             value = str(hueObjectItemValue)
                         else:
                             value = int(hueObjectItemValue)
@@ -273,6 +286,7 @@ class HUE():
                             # ausschliesslich der 'on' Zustand und 'reachable' werden immer gesetzt 
                             if self._listenItems[(hueLampId + 'on')]() or (returnItem == (hueLampId + 'on')) or (returnItem == (hueLampId + 'reachable')):
                                 self._listenItems[returnItem](value,'HUE')
+                
         self._lampslock.release()
         return
     #
