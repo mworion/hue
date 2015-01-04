@@ -51,7 +51,7 @@ Specify the lamp id. Via this parameter the hue connection is established.
 
 ### hue_send
 Specifies the attribute which is send to the lamp when this item is altered.
-Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'effect', 'alert'
+Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct', 'scene'
 The value ranges of the items and the types are:
 'on': bool : False / True
 'bri': num : 0-255
@@ -62,6 +62,7 @@ The value ranges of the items and the types are:
 'col_r': num : 0-255
 'col_g': num : 0-255
 'col_b': num : 0-255
+'ct' : num : 153 - 500
 Please refer to the specs of the API of the hue lamps. 
 
 ### hue_listen
@@ -103,6 +104,16 @@ Parameter which determines the time, the dimmer takes for making on step.
         	type = bool
         	hue_id = 1
         	hue_listen = reachable
+        [[[ct]]]
+        	type = num
+        	hue_id = 1
+        	hue_send = ct
+        	hue_listen = ct
+        [[[scene]]]
+        	type = str
+        	hue_id = 1
+        	hue_send = scene
+        	enforce_updates = true
         [[[bri]]]
         	type = num
         	cache = on
