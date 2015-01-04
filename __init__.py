@@ -22,7 +22,7 @@ import json
 import http.client
 import time
 import threading
-from lib.rgb_cie import Converter, XYPoint
+from plugins.hue.rgb_cie import Converter, XYPoint
 #import pydevd
 
 logger = logging.getLogger('')
