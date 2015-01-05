@@ -26,7 +26,9 @@ Typical configuration
 [HUE]
    class_name = HUE
    class_path = plugins.hue
-   hue_user = 38f625a739562a8bd261ab9c7f5e62c8
+   hue_user = 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8
+   hue_ip = 192.168.2.2,192.168.2.3,192.168.2.4
+   hue_port = 80,80,80
 </pre>
 
 ### hue_user
@@ -111,6 +113,7 @@ Parameter which determines the time, the dimmer takes for making on step.
     	[[[power]]]
         	type = bool
         	hue_id = 1
+        	hue_bridge = 0
         	hue_send = on
         	hue_listen = on
             knx_dpt = 1
