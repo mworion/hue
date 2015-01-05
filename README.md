@@ -1,10 +1,14 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-version 0.9 develop
+version 0.91 develop
 
-# rgb is included !!! please read carefully !
+### rgb is included !!! please read carefully !
 until submodules are realized the converter is included to the hue plugin directory
+
+### test for multi bridge support is in !
+If you don't have mor than one bridge, no change is needed.
+
 # Requirements
 
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter
@@ -27,16 +31,22 @@ Typical configuration
 
 ### hue_user
 A user name for the hue bridge. Usually this is a hash value of 32 hexadecimal digits.
+If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
+All users are separated with semicolon !
 
 If the user/hash is not yet authorized, you can use sh.hue.authorizeuser() (via interactive shell or via logic)
 to authorize it. The link button must be pressed before.
 
 ### hue_ip
 IP or host name of the hue bridge. Per default this is "Philips-hue", so that you normally don't have to
-specify a value here.
+specify a value here. 
+If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
+All ip's are separated with semicolon !
 
 ### hue_port
 Port number of the hue bridge. Default 80. Normally there is no need to change that.
+If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
+All ports are separated with semicolon !
 
 ### cycle
 Cycle in seconds to how often update the state of the lights in smarthome.
@@ -45,10 +55,15 @@ Note: The hue bridge has no notification feature. Therefore changes can only be 
 
 ## items.conf
 
+### hue_bridge
+
+Specify the number of the bridge id. Via this parameter the right hue connection is established.
+The numbers start with 0. There must be no missing number in between ! 
+
 ### hue_id
-
-Specify the lamp id. Via this parameter the hue connection is established. 
-
+Specify the lamp id. Via this parameter the right lamp on the hue connection is established.
+The numbers are the coresponding numbers of the lamp Id in the bridge. They normally start with 0.
+ 
 ### hue_send
 Specifies the attribute which is send to the lamp when this item is altered.
 Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct', 'scene'
