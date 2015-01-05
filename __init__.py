@@ -410,11 +410,8 @@ class HUE():
                             if not self._listenLampItems[returnItem]._fading:
                                 # es werden nur die Einträge zurückgeschrieben, falls die Lampe on 0 true ist
                                 # ausschliesslich der 'on' Zustand und 'reachable' werden immer gesetzt 
-                                if hueBridgeId + '_' + hueLampId + 'on' in self._listenLampItems:
-                                    if self._listenLampItems[(hueBridgeId + '_' + hueLampId + 'on')]() or (returnItem == (hueBridgeId + '_' + hueLampId + 'on')) or (returnItem == (hueBridgeId + '_' + hueLampId + 'reachable')):
-                                        self._listenLampItems[returnItem](value, 'HUE')
-                                else:
-                                    logger.warning('HUE: _update_lamps: no item for status on/off for bridge {0} lamp {1} defined'.format(hueBridgeId, hueLampId))
+                                if not hueObjectItem == 'bri':
+                                    self._listenLampItems[returnItem](value, 'HUE')
                     
             self._lampslock.release()
             numberBridgeId = numberBridgeId + 1
