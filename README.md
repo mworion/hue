@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-version 0.7 develop
+version 0.9 develop
 
 # rgb is included !!! please read carefully !
 until submodules are realized the converter is included to the hue plugin directory
@@ -109,6 +109,7 @@ Parameter which determines the time, the dimmer takes for making on step.
         	hue_id = 1
         	hue_send = ct
         	hue_listen = ct
+        	enforce_updates = true
         [[[scene]]]
         	type = str
         	hue_id = 1
@@ -124,7 +125,7 @@ Parameter which determines the time, the dimmer takes for making on step.
 	       	[[[[dim]]]]
 	    		type = list
 	        	knx_dpt = 3
-	        	knx_cache = 8/0/2
+	        	knx_listen = 8/0/2
 	        	hue_dim_max = 255
 	        	hue_dim_step = 5
 	        	hue_dim_time = 0.5
