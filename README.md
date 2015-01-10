@@ -43,22 +43,25 @@ If the user/hash is not yet authorized, you can use sh.hue.authorizeuser() (via 
 to authorize it. The link button must be pressed before.
 
 ### hue_ip
-IP or host name of the hue bridge. Per default this is "Philips-hue", so that you normally don't have to
-specify a value here. 
+IP or host name of the hue bridge. 
+Default this is "Philips-hue".
 If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
 All ip's are separated with semicolon !
 
 ### hue_port
-Port number of the hue bridge. Default 80. Normally there is no need to change that.
+Port number of the hue bridge. 
+Default 80. Normally there is no need to change that.
 If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
 All ports are separated with semicolon !
 
 ### cycle_lamps
 Cycle in seconds to how often update the state of the lights in smarthome.
+Default value is 10 seconds.
 Note: The hue bridge has no notification feature. Therefore changes can only be detected via polling.
 
 ### cycle_bridges
 Cycle in seconds to how often update the state of the bridges in smarthome.
+Default value is 60 seconds
 Note: The hue bridge has no notification feature. Therefore changes can only be detected via polling.
 
 ### default_transitionTime
