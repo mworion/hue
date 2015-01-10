@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-version 0.94 develop
+version 0.95 develop
 
 ### test for multi bridge support is in !
 If you don't have mor than one bridge, no change is needed.
@@ -14,7 +14,7 @@ Philips hue bridge, multiple bridges allowed
 
 # Configuration
 ## plugin.conf
-Typical configuration
+Typical configuration for 3 bridges
 <pre>
 [HUE]
    class_name = HUE
@@ -25,6 +25,14 @@ Typical configuration
    cycle_lamps = 3
    cycle_bridges = 30
    default_transitionTime = 0.4
+</pre>
+Minimal configuration for single bridge an default settings
+<pre>
+[HUE]
+   class_name = HUE
+   class_path = plugins.hue
+   hue_user = 38f625a739562a8bd261ab9c7f5e62c8
+   hue_ip = 192.168.2.2
 </pre>
 
 ### hue_user
@@ -62,7 +70,7 @@ Note: The hue bridge has no notification feature. Therefore changes can only be 
 
 ### hue_bridge_id (formerly hue_bridge !)
 
-Specify the number of the bridge id. Via this parameter the right hue connection is established.
+Specify the number of the hue_bridge_id. Via this parameter the right hue connection is established.
 The numbers start with 0. There must be no missing number in between !
 
 ### hue_lamp_id (formerly hue_id)
@@ -128,8 +136,6 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
 <pre>
 [keller]
 	[[hue]]
-		# important to give this item a type = str to be set as a real item with attributes 
-		type = str
 		# if hue_lamp_id und hue_bridge_id ist set in a highe layer, it is used for all lower layers automatically, this is overwrite mode
 		hue_lamp_id = 1
 		hue_bridge_id = 0
@@ -267,7 +273,6 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
          [[[swversion]]]
         	type = str
         	hue_listen = swversion
-
 </pre>
 
 Please not that knx_cache is wrong in the old example for [[[dim]]], the right setting is knx_listen
