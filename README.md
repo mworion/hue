@@ -6,11 +6,10 @@ version 0.95 develop
 
 # rgb is included !!! please read carefully !
 until submodules are realized the converter is included to the hue plugin directory
-=======
+
 ### test for multi bridge support is in !
 If you don't have mor than one bridge, no change is needed.
 
->>>>>>> refs/heads/develop
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
 
