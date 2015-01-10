@@ -43,8 +43,7 @@ If the user/hash is not yet authorized, you can use sh.hue.authorizeuser() (via 
 to authorize it. The link button must be pressed before.
 
 ### hue_ip
-IP or host name of the hue bridge. 
-Default this is "Philips-hue".
+IP or host name of the hue bridge. There is no default, please us a valid ip address.
 If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
 All ip's are separated with semicolon !
 
@@ -301,7 +300,7 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
          [[[modeltype]]]
         	type = str
         	hue_listen = type
-         [[[name]]]
+         [[[lampname]]]
         	type = str
         	hue_listen = name
          [[[modelid]]]

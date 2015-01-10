@@ -31,7 +31,7 @@ logger = logging.getLogger('HUE:')
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip = 'Philips-hue', hue_user = '', hue_port = '80', cycle_lamps = '5', cycle_bridges = '60', default_transitionTime = '0.4'):
+    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '5', cycle_bridges = '60', default_transitionTime = '0.4'):
 
         # parameter zu übergabe aus der konfiguration pulgin.conf
 #        pydevd.settrace('192.168.2.57')        
