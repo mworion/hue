@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-version 0.95 develop
+version 0.96 develop
 
 ### test for multi bridge support is in !
 If you don't have mor than one bridge, no change is needed.
