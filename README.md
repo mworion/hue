@@ -1,14 +1,8 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
-<<<<<<< HEAD
 
-version 0.9 develop
-=======
 version 0.95 develop
->>>>>>> refs/heads/develop
-
-<<<<<<< HEAD
 
 # rgb is included !!! please read carefully !
 until submodules are realized the converter is included to the hue plugin directory

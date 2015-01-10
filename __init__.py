@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 0.9 develop
+#  Version 0.95 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
