@@ -77,32 +77,63 @@ The numbers start with 0. There must be no missing number in between !
 Specify the lamp id. Via this parameter the right lamp on the hue connection is established.
 The numbers are the coresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
 hue_bridge_id attached to this item as well. If not, a default value of 0 will be set.
- 
+
+## Commands and Parameters supported
+Please refer to the specs of the API 1.4 of the hue at http://www.developers.meethue.com/documentation/lights-api.
+Readable means you can set a hue_listen attribute in a item with the corresponding name
+Writable means you can set a hue_send attribute in a item with the corresponding name
+
+#### Lamp related part
+<pre>
+Attribute			Type 	Range							Readable	Writable
+'on'				bool 	False / True					yes			yes
+'bri'				num 	0-255							yes			yes
+'sat'				num 	0-255							yes			yes
+'hue'				num 	0-65535							yes			yes
+'effect'			str  	'none' or 'colorloop'			yes			yes
+'alert'				str 	'none' or 'select' or 'lselect'	yes			yes
+'col_r'				num 	0-255							no			yes
+'col_g'				num 	0-255							no			yes
+'col_b'				num 	0-255							no			yes
+'ct' 				num 	153 - 500						yes			yes
+'type'				str		text							yes			no
+'name'				str		text							yes			no
+'modelid'			str		text							yes			no
+'swversion',		str		text							yes			no
+</pre>
+
+#### Bridge related Part
+<pre>
+Attribute			Type 	Range							Readable	Writable
+'scene' 			str 	scene name in bridge			no			yes
+'bridge_name'		str		text							yes			no
+'zigbeechannel'		num		1-13							yes			no
+'mac'				str		text							yes			no
+'dhcp'				bool	False / True					yes			no
+'ipaddress'			str		text							yes			no
+'netmask'			str		text							yes			no
+'gateway'			str		text							yes			no
+'UTC'				str		text							yes			no
+'localtime'			str		text							yes			no
+'timezone'			str		text							yes			no
+'bridge_swversion'	str		text							yes			no
+'apiversion'		str		text							yes			no
+'swupdate',			dict	object							yes			no
+'linkbutton'		bool	False / True					yes			no
+'portalservices'	bool	False / True					yes			no
+'portalconnection'	str		text							yes			no
+'portalstate'		dict	object							yes			no
+'whitelist'			dict	object							yes			no
+</pre>
+
 ### hue_send
-Specifies the attribute which is send to the lamp when this item is altered.
-Available attributes currently are: 'on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct', 'scene'
-The value ranges of the items and the types are:
-'on': bool : False / True
-'bri': num : 0-255
-'sat': num : 0-255
-'hue': num : 0-65535
-'effect': str : 'none' or 'colorloop'
-'alert': dtr : 'none' or 'select' or 'lselect'
-'col_r': num : 0-255
-'col_g': num : 0-255
-'col_b': num : 0-255
-'ct' : num : 153 - 500
-'scene' : str : string of the programmed scene name in bridge
-Please refer to the specs of the API of the hue lamps.
-In addition to hue_send an hue_lamp_id and hue_bridge_id has to be set. This could be done in upper layers. If it's missing the parameter is removed.
+Specifies the writable attribute which is send to the lamp when this item is altered.
+In addition to hue_send an hue_lamp_id and hue_bridge_id (optional for one bridge) has to be set. 
+
 
 ### hue_listen
-Specifies the attribute which is updated on a scheduled timer from the lamps and bridges.
-For the lamps the available attributes currently are: 
-'on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'swversion', 'ct'
-for the bridges the available attributes currently are : 
-'bridge_name','zigbeechannel','mac','dhcp','ipaddress','netmask','gateway','UTC','localtime','timezone','bridge_swversion','apiversion','swupdate',
-'linkbutton','portalservices','portalconnection','portalstate','whitelist'
+Specifies the readable attribute which is updated on a scheduled timer from the lamps and bridges.
+In addition to hue_send an hue_lamp_id and hue_bridge_id (optional for one bridge) has to be set. 
 
 ### hue_transitionTime
 This parameter specifies the time, which the lamp take to reach the a newly set value. This is done by interpolation of the values inside the lamp. 
@@ -112,6 +143,9 @@ In addition to hue_send an hue_lamp_id and hue_bridge_id has to be set. This cou
 ### Using DPT3 dimming
 If you would like to use a DPT3 dimmer, you have to specify a subitem to the dimmed hue item. To this subitem you link the knx DPT3 part. 
 You can control the dimming via some parameters, which have to be specified in this subitem.
+
+DPT3 dimming could be use with every item which has the type = num (even if it's not hue related !) 
+
 If you are using the DPT3 dimmer, please take into account that there is a lower limit of timing. 
 A lower value than 0.2 seconds should be avoided, regarding the performance of the overall system. 
 Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. 

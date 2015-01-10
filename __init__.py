@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 0.95 develop
+#  Version 0.96 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -31,7 +31,7 @@ logger = logging.getLogger('HUE:')
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '5', cycle_bridges = '60', default_transitionTime = '0.4'):
+    def __init__(self, smarthome, hue_ip = 'Philips-hue', hue_user = '', hue_port = '80', cycle_lamps = '5', cycle_bridges = '60', default_transitionTime = '0.4'):
 
         # parameter zu übergabe aus der konfiguration pulgin.conf
 #        pydevd.settrace('192.168.2.57')        
@@ -124,10 +124,14 @@ class HUE():
         itemSearch = item
         # schleife bis ich ganz oben angekommen bin
         while (not attribute in itemSearch.conf):
+            # eine Stufe in den ebenen nach oben
             itemSearch = itemSearch.return_parent()                    
             if (itemSearch is self._sh):
-                # eine Stufe in den ebenen nach oben
-                logger.warning('HUE: _find_item_attribute: could not find [{0}] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
+                if attribute == 'hue_bridge_id' and self._numberHueBridges > 1:
+                    logger.warning('HUE: _find_item_attribute: could not find [{0}  ] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
+                elif attribute == 'hue_lamp_id':
+                    logger.error('HUE: _find_item_attribute: could not find [{0}  ] for item [{1}], an value has to be defined'.format(attribute, item))
+                    raise Exception('HUE: Plugin stopped due to missing hue_lamp_id in item.conf')
                 # wenn nicht gefunden, dann wird der standardwert zurückgegeben
                 return str(attributeDefault)
         itemAttribute = int(itemSearch.conf[attribute])
