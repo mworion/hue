@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 0.96 develop
+#  Version 0.97 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -347,29 +347,34 @@ class HUE():
                     
     def _request(self, hueBridgeId='0', path='', method='GET', data=None):
         # hue bridge mit einem http request abfragen
-        connectionHueBridge = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)])
-        connectionHueBridge.request(method, "/api/%s%s" % (self._hue_user[int(hueBridgeId)], path), data)
-        responseRaw = connectionHueBridge.getresponse()
-        connectionHueBridge.close()
-
-        # rückmeldung 200 ist OK
-        if responseRaw.status != 200:
-            logger.error('HUE: _request: response Raw: Request failed')
-            return None
-        # lesen, decodieren nach utf-8 (ist pflicht nach der api definition philips) und in ein python objekt umwandeln
-        responseJson = responseRaw.read().decode('utf-8')
-        response = json.loads(responseJson)
-        # fehlerauswertung der rückmeldung, muss noch vervollständigt werden
-        if isinstance(response, list) and response[0].get('error', None):
-            error = response[0]["error"]
-            description = error['description']
-            if error['type'] == 1:
-                logger.error('HUE: _request: Error: {0} (Need to specify correct hue user?)'.format(description))
-            else:
-                logger.error('HUE: _request: Error: {0}'.format(description))
-            return None
+        try:
+            connectionHueBridge = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)])
+            connectionHueBridge.request(method, "/api/%s%s" % (self._hue_user[int(hueBridgeId)], path), data)
+        except Exception as e:
+            logger.error('HUE: _request: problem in http.client exception : {0} '.format(e))
+            if connectionHueBridge:
+                connectionHueBridge.close()
         else:
-            return response
+            responseRaw = connectionHueBridge.getresponse()
+            connectionHueBridge.close()
+            # rückmeldung 200 ist OK
+            if responseRaw.status != 200:
+                logger.error('HUE: _request: response Raw: Request failed')
+                return None
+            # lesen, decodieren nach utf-8 (ist pflicht nach der api definition philips) und in ein python objekt umwandeln
+            responseJson = responseRaw.read().decode('utf-8')
+            response = json.loads(responseJson)
+            # fehlerauswertung der rückmeldung, muss noch vervollständigt werden
+            if isinstance(response, list) and response[0].get('error', None):
+                error = response[0]["error"]
+                description = error['description']
+                if error['type'] == 1:
+                    logger.error('HUE: _request: Error: {0} (Need to specify correct hue user?)'.format(description))
+                else:
+                    logger.error('HUE: _request: Error: {0}'.format(description))
+                return None
+            else:
+                return response
 
     def _set_lamp_state(self, hueBridgeId, hueLampId, state):
         # hier erfolgt das setzen des status einer lampe
@@ -507,6 +512,14 @@ class HUE():
             self._hueLampsLock.release()
             numberBridgeId = numberBridgeId + 1
 
+    def get_config(self, hueBridgeId='0'):
+        #
+        # hier eine interaktive routing für di ecli, um den user herauszubekommen, 
+        # mit dem die szenen gesetzt worden sind, um ihn dann als user für das plugin einzusetzen
+        # und jetzt alle szenen
+        response = self._request(hueBridgeId, '/scenes')
+        logger.warning('HUE: get_config: scenes {0}'.format(response))
+        return response
 
     def authorizeuser(self, hueBridgeId='0'):
         data = json.dumps(

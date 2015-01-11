@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 0.96 develop
+version 0.97 develop
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
@@ -340,6 +340,10 @@ No logic attributes.
 
 ## authorizeuser()
 Authorizes the user configured by hue_user config property. You have to press the link button.
+
+## get_config(hue_bridge_id)
+Drops the list of stored scenes in the bridge.
+Parameter the bridge id as string !
 
 <pre>
 sh.hue.authorizeuser()
