@@ -1,10 +1,7 @@
 # Phillips HUE
 
-###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
+###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
 version 0.96 develop
-
-### test for multi bridge support is in !
-If you don't have more than one bridge, no change is needed.
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
