@@ -168,7 +168,7 @@ class HUE():
                 if not hueIndex in self._listenLampItems:
                     self._listenLampItems[hueIndex] = item
                 else:
-                    logger.warning('HUE: parse_item: command hue_listen = {0} defined more than once in item [{1}]'.format(hueListenCommand,item))
+                    logger.warning('HUE: parse_item: in lamp item [{0}] command hue_listen = {1} is duplicated to item  [{2}]'.format(item,hueListenCommand,self._listenLampItems[hueIndex]))
             elif hueListenCommand in self._listenBridgeKeys:
                 # hier brauche ich nur eine hue_bridge_id
                 hueBridgeId = self._find_item_attribute(item, 'hue_bridge_id', 0, self._numberHueBridges)
@@ -177,7 +177,7 @@ class HUE():
                 if not hueIndex in self._listenBridgeItems:
                     self._listenBridgeItems[hueIndex] = item
                 else:
-                    logger.warning('HUE: parse_item: command hue_listen = {0} defined more than once in item [{1}]'.format(hueListenCommand,item))
+                    logger.warning('HUE: parse_item: in bridge item [{0}] command hue_listen = {1} is duplicated to item  [{2}]'.format(item,hueListenCommand,self._listenLampItems[hueIndex]))
             else:
                 logger.error('HUE: parse_item: command hue_listen = {0} not defined in item [{1}]'.format(hueListenCommand,item))
         
@@ -193,7 +193,7 @@ class HUE():
                 if not hueIndex in self._sendLampItems:
                     self._sendLampItems[hueIndex] = item
                 else:
-                    logger.warning('HUE: parse_item: command hue_send = {0} defined more than once in item [{1}]'.format(hueSendCommand,item))
+                    logger.warning('HUE: parse_item: in lamp item [{0}] command hue_send = {1} is duplicated to item  [{2}]'.format(item,hueSendCommand,self._sendLampItems[hueIndex]))
                 return self.update_lamp_item
             elif hueSendCommand in self._sendBridgeKeys:
                 # hier brauche ich nur eine hue_bridge_id
@@ -203,7 +203,7 @@ class HUE():
                 if not hueIndex in self._sendBridgeItems:
                     self._sendBridgeItems[hueIndex] = item
                 else:
-                    logger.warning('HUE: parse_item: command hue_send = {0} defined more than once in item [{1}]'.format(hueSendCommand,item))
+                    logger.warning('HUE: parse_item: in bridge item [{0}] command hue_send = {1} is duplicated to item  [{2}]'.format(item,hueSendCommand,self._sendLampItems[hueIndex]))
                 return self.update_bridge_item
             else:
                 logger.error('HUE: parse_item: command hue_send = {0} not defined in item [{1}]'.format(hueSendCommand,item))
