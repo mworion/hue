@@ -17,22 +17,22 @@ Philips hue bridge, multiple bridges allowed
 Typical configuration for 3 bridges
 <pre>
 [HUE]
-   class_name = HUE
-   class_path = plugins.hue
-   hue_user = 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8
-   hue_ip = 192.168.2.2,192.168.2.3,192.168.2.4
-   hue_port = 80,80,80
-   cycle_lamps = 3
-   cycle_bridges = 30
-   default_transitionTime = 0.4
+    class_name = HUE
+    class_path = plugins.hue
+    hue_user = 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8
+    hue_ip = 192.168.2.2,192.168.2.3,192.168.2.4
+    hue_port = 80,80,80
+    cycle_lamps = 3
+    cycle_bridges = 30
+    default_transitionTime = 0.4
 </pre>
 Minimal configuration for single bridge an default settings
 <pre>
 [HUE]
-   class_name = HUE
-   class_path = plugins.hue
-   hue_user = 38f625a739562a8bd261ab9c7f5e62c8
-   hue_ip = 192.168.2.2
+    class_name = HUE
+    class_path = plugins.hue
+    hue_user = 38f625a739562a8bd261ab9c7f5e62c8
+    hue_ip = 192.168.2.2
 </pre>
 
 ### hue_user
@@ -97,16 +97,19 @@ Attribute            Type   Range                           Readable    Writable
 'ct'                 num    153 - 500                       yes         yes
 'alert'              str    'none' or 'select' or 'lselect' yes         yes
 'effect'             str    'none' or 'colorloop'           yes         yes
-'hue_transitionTime' num    0-65535                         ?           yes
+'reachable'          bool   False / True                    yes         no
+'hue_transitionTime' num    0-65535                         no          yes
 'col_r'              num    0-255                           no          yes
 'col_g'              num    0-255                           no          yes
 'col_b'              num    0-255                           no          yes
 </pre>
-Instead of implementing the 'xy' state attribute, 'col_r', 'col_g' and 'col_b' have been implemented and allow the color control directly from a SmartVISU widget (e.g. Colordisc).
+Instead of implementing the 'xy' state attribute, 'col_r', 'col_g' and 'col_b' have been implemented to allow the color control directly from a SmartVISU widget (e.g. Colordisc).
+
+For a basic control of the the lights you only need to implement the first 4 to 5 attributes of the Lights API ('on', 'bri', 'hue', 'sat' and 'ct').  The rest of the attributes is only needed, if you want to do MORE. 
 
 
  
-#### Lights API (Light attributes)
+#### Lights API (Lamp attributes)
 <pre>
 Attribute            Type   Range                           Readable    Writable
 'type'               str    text                            yes         no
@@ -191,147 +194,147 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
 # items/test.conf
 <pre>
 [keller]
-	[[hue]]
-		# if hue_lamp_id and hue_bridge_id is not set, it is searched in a higher layer
-		hue_lamp_id = 1
-		hue_bridge_id = 0
-    	[[[bridge_name]]]
-    		type = str
-			hue_listen = bridge_name
-    	[[[zigbeechannel]]]
-    		type = num
-			hue_listen = zigbeechannel
-    	[[[mac]]]
-    		type = str
-			hue_listen = mac
-    	[[[dhcp]]]
-    		type = bool
-			hue_listen = dhcp
-    	[[[ipaddress]]]
-    		type = str
-			hue_listen = ipaddress
-    	[[[netmask]]]
-    		type = str
-			hue_listen = netmask
-    	[[[gateway]]]
-    		type = str
-			hue_listen = gateway
-    	[[[utc]]]
-    		type = str
-			hue_listen = UTC
-    	[[[localtime]]]
-    		type = str
-			hue_listen = localtime
-    	[[[timezone]]]
-    		type = str
-			hue_listen = timezone
-    	[[[whitelist]]]
-    		type = dict
-			hue_listen = whitelist
-    	[[[bridge_swversion]]]
-    		type = str
-			hue_listen = bridge_swversion
-    	[[[apiversion]]]
-    		type = str
-			hue_listen = apiversion
-    	[[[swupdate]]]
-    		type = dict
-			hue_listen = swupdate
-    	[[[linkbutton]]]
-    		type = bool
-			hue_listen = linkbutton
-    	[[[portalservices]]]
-    		type = bool
-			hue_listen = portalservices
-    	[[[portalconnection]]]
-    		type = str
-			hue_listen = portalconnection
-    	[[[portalstate]]]
-    		type = dict
-			hue_listen = portalstate
-    	[[[power]]]
-        	type = bool
-        	hue_send = on
-        	hue_listen = on
+    [[hue]]
+        # if hue_lamp_id and hue_bridge_id is not set, it is searched in a higher layer
+        hue_lamp_id = 1
+        hue_bridge_id = 0
+        [[[bridge_name]]]
+            type = str
+            hue_listen = bridge_name
+        [[[zigbeechannel]]]
+            type = num
+            hue_listen = zigbeechannel
+        [[[mac]]]
+            type = str
+            hue_listen = mac
+        [[[dhcp]]]
+            type = bool
+            hue_listen = dhcp
+        [[[ipaddress]]]
+            type = str
+            hue_listen = ipaddress
+        [[[netmask]]]
+            type = str
+            hue_listen = netmask
+        [[[gateway]]]
+            type = str
+            hue_listen = gateway
+        [[[utc]]]
+            type = str
+            hue_listen = UTC
+        [[[localtime]]]
+            type = str
+            hue_listen = localtime
+        [[[timezone]]]
+            type = str
+            hue_listen = timezone
+        [[[whitelist]]]
+            type = dict
+            hue_listen = whitelist
+        [[[bridge_swversion]]]
+            type = str
+            hue_listen = bridge_swversion
+        [[[apiversion]]]
+            type = str
+            hue_listen = apiversion
+        [[[swupdate]]]
+            type = dict
+            hue_listen = swupdate
+        [[[linkbutton]]]
+            type = bool
+            hue_listen = linkbutton
+        [[[portalservices]]]
+            type = bool
+            hue_listen = portalservices
+        [[[portalconnection]]]
+            type = str
+            hue_listen = portalconnection
+        [[[portalstate]]]
+            type = dict
+            hue_listen = portalstate
+        [[[power]]]
+            type = bool
+            hue_send = on
+            hue_listen = on
             knx_dpt = 1
             knx_cache = 8/0/1
-    	[[[reachable]]]
-        	type = bool
-        	hue_listen = reachable
+        [[[reachable]]]
+            type = bool
+            hue_listen = reachable
         [[[ct]]]
-        	type = num
-        	hue_send = ct
-        	hue_listen = ct
+            type = num
+            hue_send = ct
+            hue_listen = ct
         [[[scene]]]
-        	type = str
-        	hue_send = scene
-        	enforce_updates = true
+            type = str
+            hue_send = scene
+            enforce_updates = true
         [[[bri]]]
-        	type = num
-        	cache = on
-        	hue_send = bri
-        	hue_listen = bri
-        	hue_transitionTime = 0.2
-	       	[[[[dim]]]]
-	    		type = list
-	        	knx_dpt = 3
-	        	knx_listen = 8/0/2
-	        	hue_dim_max = 255
-	        	hue_dim_step = 10
-	        	hue_dim_time = 0.2
+            type = num
+            cache = on
+            hue_send = bri
+            hue_listen = bri
+            hue_transitionTime = 0.2
+            [[[[dim]]]]
+                type = list
+                knx_dpt = 3
+                knx_listen = 8/0/2
+                hue_dim_max = 255
+                hue_dim_step = 10
+                hue_dim_time = 0.2
         [[[sat]]]
-        	type = num
-        	cache = on
-        	hue_send = sat
-        	hue_listen = sat
+            type = num
+            cache = on
+            hue_send = sat
+            hue_listen = sat
         [[[col_r]]]
-        	type = num
-        	cache = on
-        	hue_send = col_r
+            type = num
+            cache = on
+            hue_send = col_r
         [[[col_g]]]
-        	type = num
-        	cache = on
-        	hue_send = col_g
+            type = num
+            cache = on
+            hue_send = col_g
         [[[col_b]]]
-        	type = num
-        	cache = on
-        	hue_send = col_b
+            type = num
+            cache = on
+            hue_send = col_b
         [[[hue]]]
-        	type = num
-        	cache = on
-        	hue_send = hue
-        	hue_listen = hue
-        	hue_transitionTime = 0.2
-	       	[[[[dim]]]]
-	    		type = list
-	        	knx_dpt = 3
-	        	knx_listen = 8/0/12
-	        	hue_dim_max = 65535
-	        	hue_dim_step = 2000
-	        	hue_dim_time = 0.2
+            type = num
+            cache = on
+            hue_send = hue
+            hue_listen = hue
+            hue_transitionTime = 0.2
+            [[[[dim]]]]
+                type = list
+                knx_dpt = 3
+                knx_listen = 8/0/12
+                hue_dim_max = 65535
+                hue_dim_step = 2000
+                hue_dim_time = 0.2
         [[[effect]]]
-        	type = str
-        	hue_send = effect
-        	hue_listen = effect
+            type = str
+            hue_send = effect
+            hue_listen = effect
         [[[alert]]]
-        	type = str
-        	hue_send = alert
-        	hue_listen = alert
-         [[[modeltype]]]
-        	type = str
-        	hue_listen = type
-         [[[lampname]]]
-        	type = str
-        	hue_listen = name
-         [[[modelid]]]
-        	type = str
-        	hue_listen = modelid
-         [[[swversion]]]
-        	type = str
-        	hue_listen = swversion
+            type = str
+            hue_send = alert
+            hue_listen = alert
+        [[[modeltype]]]
+            type = str
+            hue_listen = type
+        [[[lampname]]]
+            type = str
+            hue_listen = name
+        [[[modelid]]]
+            type = str
+            hue_listen = modelid
+        [[[swversion]]]
+            type = str
+            hue_listen = swversion
 </pre>
 
-Please not that knx_cache is wrong in the old example for [[[dim]]], the right setting is knx_listen
+Please note that knx_cache is wrong in the old example for [[[dim]]], the right setting is knx_listen
 
 ## logic.conf
 No logic attributes.
