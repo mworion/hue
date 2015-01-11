@@ -340,11 +340,15 @@ No logic attributes.
 
 ## authorizeuser()
 Authorizes the user configured by hue_user config property. You have to press the link button.
-
-## get_config(hue_bridge_id)
-Drops the list of stored scenes in the bridge.
-Parameter the bridge id as string !
-
 <pre>
 sh.hue.authorizeuser()
 </pre>
+
+## get_config()
+Drops the list of stored scenes in the bridge.
+Parameter the bridge id as string !
+<pre>
+sh.hue.get_config(hue_bridge_id)
+</pre>
+
+
