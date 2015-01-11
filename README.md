@@ -1,4 +1,5 @@
 # Phillips HUE
+# Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
 version 0.96 develop
@@ -85,47 +86,67 @@ Please refer to the specs of the API 1.4 of the hue at http://www.developers.mee
 Readable means you can set a hue_listen attribute in a item with the corresponding name
 Writable means you can set a hue_send attribute in a item with the corresponding name
 
-#### Lamp related part
+#### Lights API (Light state)
+All Attributes for the Light state (besides 'on') can only be set, if the light is on!
+
 <pre>
-Attribute			Type 	Range							Readable	Writable
-'on'				bool 	False / True					yes			yes
-'bri'				num 	0-255							yes			yes
-'sat'				num 	0-255							yes			yes
-'hue'				num 	0-65535							yes			yes
-'effect'			str  	'none' or 'colorloop'			yes			yes
-'alert'				str 	'none' or 'select' or 'lselect'	yes			yes
-'col_r'				num 	0-255							no			yes
-'col_g'				num 	0-255							no			yes
-'col_b'				num 	0-255							no			yes
-'ct' 				num 	153 - 500						yes			yes
-'type'				str		text							yes			no
-'name'				str		text							yes			no
-'modelid'			str		text							yes			no
-'swversion',		str		text							yes			no
+Attribute            Type   Range                           Readable    Writable
+'on'                 bool   False / True                    yes         yes
+'bri'                num    0-255                           yes         yes
+'hue'                num    0-65535                         yes         yes
+'sat'                num    0-255                           yes         yes
+'ct'                 num    153 - 500                       yes         yes
+'alert'              str    'none' or 'select' or 'lselect' yes         yes
+'effect'             str    'none' or 'colorloop'           yes         yes
+'hue_transitionTime' num    0-65535                         ?           yes
+'col_r'              num    0-255                           no          yes
+'col_g'              num    0-255                           no          yes
+'col_b'              num    0-255                           no          yes
+</pre>
+Instead of implementing the 'xy' state attribute, 'col_r', 'col_g' and 'col_b' have been implemented and allow the color control directly from a SmartVISU widget (e.g. Colordisc).
+
+
+ 
+#### Lights API (Light attributes)
+<pre>
+Attribute            Type   Range                           Readable    Writable
+'type'               str    text                            yes         no
+'name'               str    text                            yes         no
+'modelid'            str    text                            yes         no
+'swversion'          str    text                            yes         no
 </pre>
 
-#### Bridge related Part
+#### Groups API
 <pre>
-Attribute			Type 	Range							Readable	Writable
-'scene' 			str 	scene name in bridge			no			yes
-'bridge_name'		str		text							yes			no
-'zigbeechannel'		num		1-13							yes			no
-'mac'				str		text							yes			no
-'dhcp'				bool	False / True					yes			no
-'ipaddress'			str		text							yes			no
-'netmask'			str		text							yes			no
-'gateway'			str		text							yes			no
-'UTC'				str		text							yes			no
-'localtime'			str		text							yes			no
-'timezone'			str		text							yes			no
-'bridge_swversion'	str		text							yes			no
-'apiversion'		str		text							yes			no
-'swupdate',			dict	object							yes			no
-'linkbutton'		bool	False / True					yes			no
-'portalservices'	bool	False / True					yes			no
-'portalconnection'	str		text							yes			no
-'portalstate'		dict	object							yes			no
-'whitelist'			dict	object							yes			no
+Attribute            Type   Range                           Readable    Writable
+'scene'              str    scene name in bridge            no          yes
+</pre>
+
+#### Configuration API (Bridge related)
+<pre>
+Attribute            Type   Range                           Readable    Writable
+'bridge_name'        str    text                            yes         no
+'swupdate'           dict   object                          yes         no
+'whitelist'          dict   object                          yes         no
+'apiversion'         str    text                            yes         no
+'bridge_swversion'   str    text                            yes         no
+'linkbutton'         bool   False / True                    yes         no
+
+'ipaddress'          str    text                            yes         no
+'mac'                str    text                            yes         no
+'netmask'            str    text                            yes         no
+'gateway'            str    text                            yes         no
+'dhcp'               bool   False / True                    yes         no
+
+'portalservices'     bool   False / True                    yes         no
+'portalconnection'   str    text                            yes         no
+'portalstate'        dict   object                          yes         no
+
+'UTC'                str    text                            yes         no
+'localtime'          str    text                            yes         no
+'timezone'           str    text                            yes         no
+
+'zigbeechannel'      num    1-13                            yes         no
 </pre>
 
 ### hue_send
@@ -192,7 +213,7 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
 			hue_listen = ipaddress
     	[[[netmask]]]
     		type = str
-			hue_listen = netwask
+			hue_listen = netmask
     	[[[gateway]]]
     		type = str
 			hue_listen = gateway
