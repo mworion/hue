@@ -1,11 +1,10 @@
 # Phillips HUE
-# Phillips HUE
 
 ###New development of Hue plugin for use in smarthome (C) Michael Würtenberger 2014, 2015
 version 0.96 develop
 
 ### test for multi bridge support is in !
-If you don't have mor than one bridge, no change is needed.
+If you don't have more than one bridge, no change is needed.
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
@@ -38,21 +37,21 @@ Minimal configuration for single bridge an default settings
 
 ### hue_user
 A user name for the hue bridge. Usually this is a hash value of 32 hexadecimal digits.
-If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
-All users are separated with semicolon !
+If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
+All users are separated with comma (',') !
 If the user/hash is not yet authorized, you can use sh.hue.authorizeuser() (via interactive shell or via logic)
 to authorize it. The link button must be pressed before.
 
 ### hue_ip
 IP or host name of the hue bridge. There is no default, please us a valid ip address.
-If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
-All ip's are separated with semicolon !
+If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
+All ip's are separated with comma (',') !
 
 ### hue_port
 Port number of the hue bridge. 
 Default 80. Normally there is no need to change that.
-If you would like to use more than on bridge, you have to specify all ip adresses, ports and users accordingly.
-All ports are separated with semicolon !
+If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
+All ports are separated with comma (',') !
 
 ### cycle_lamps
 Cycle in seconds to how often update the state of the lights in smarthome.
@@ -65,8 +64,8 @@ Default value is 60 seconds
 Note: The hue bridge has no notification feature. Therefore changes can only be detected via polling.
 
 ### default_transitionTime
-Time in seconds how fast che states of the lamps are changed through the bridge itself. If you don't set a value in the item, this value
-ist used.
+Time in seconds how fast check states of the lamps are changed through the bridge itself. If you don't set a value in the item, this value
+is used.
 Note: The hue bridge has no notification feature. Therefore changes can only be detected via polling.
 
 ## items.conf
@@ -78,7 +77,7 @@ The numbers start with 0. There must be no missing number in between !
 
 ### hue_lamp_id (formerly hue_id)
 Specify the lamp id. Via this parameter the right lamp on the hue connection is established.
-The numbers are the coresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
+The numbers are the corresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
 hue_bridge_id attached to this item as well. If not, a default value of 0 will be set.
 
 ## Commands and Parameters supported
@@ -174,7 +173,7 @@ A lower value than 0.2 seconds should be avoided, regarding the performance of t
 Nevertheless to get nice and smooth results of dimming, please set the parameters of hue_transitionTime and hue_dim_time equally. 
 In that case, the lamp interpolates the transition as quick as the steps of the dimmer function happen.
 If the lamp is set to off (e.g. attribute 'on' = False), changes could be not written to the lamp. 
-Warnings in the log will appear. The lamp doesn't support this behaviour. In case of starting dimming the brigthness of the lamp, the
+Warnings in the log will appear. The lamp doesn't support this behaviour. In case of starting dimming the brightness of the lamp, the
 plugin automatically sets the lamp on and starts dimming with the last value.     
 
 ### hue_dim_max
@@ -193,7 +192,7 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
 <pre>
 [keller]
 	[[hue]]
-		# if hue_lamp_id und hue_bridge_id ist set in a highe layer, it is used for all lower layers automatically, this is overwrite mode
+		# if hue_lamp_id and hue_bridge_id is not set, it is searched in a higher layer
 		hue_lamp_id = 1
 		hue_bridge_id = 0
     	[[[bridge_name]]]
