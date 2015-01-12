@@ -116,9 +116,6 @@ class HUE():
         # anstossen des updates zu beginn
         self._sh.trigger('hue-update-bridges', self._update_bridges)
         # jetzt noch den bridge errorstatus default auf false setzen
-        if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
-            # wenn der item abgelegt ist, dann kann er auch gesetzt werden
-            self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](False,'HUE')
 
     def stop(self):
         self.alive = False
@@ -281,10 +278,15 @@ class HUE():
                             value_r = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_r')](), 0, 255)    
                             value_g = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_g')](), 0, 255)    
                             value_b = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_b')](), 0, 255)    
-                            # umrechnung
-                            xyPoint = self._rgbConverter.rgbToCIE1931(value_r, value_g, value_b)
-                            # und jetzt der wert setzen
-                            self._set_lamp_state(hueBridgeId, hueLampId, {'xy': xyPoint, 'transitiontime': hueTransitionTime})
+                            # umrechnung mit try, da es zu division durch 0 kommt (beobachtung)
+                            try:
+                                # umrechnung
+                                xyPoint = self._rgbConverter.rgbToCIE1931(value_r, value_g, value_b)
+                            except Exception as e:
+                                logger.error('HUE: update_lamp_item: problem in library rgbToCIE1931 exception : {0} '.format(e))
+                            else:
+                                # und jetzt der wert setzen
+                                self._set_lamp_state(hueBridgeId, hueLampId, {'xy': xyPoint, 'transitiontime': hueTransitionTime})
                         else:
                             logger.warning('HUE: update_lamp_item: on or more of the col... items around item [{0}] is not defined'.format(item))
                     else:
@@ -364,6 +366,9 @@ class HUE():
         else:
             responseRaw = connectionHueBridge.getresponse()
             connectionHueBridge.close()
+            if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
+                # wenn der item abgelegt ist, dann kann er auch rückgesetzt werden
+                self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](False,'HUE')
             # rückmeldung 200 ist OK
             if responseRaw.status != 200:
                 logger.error('HUE: _request: response Raw: Request failed')
@@ -439,7 +444,6 @@ class HUE():
     def _update_lamps(self):
         # mache ich mit der API get all lights
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen beispiel:
-
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
@@ -487,9 +491,7 @@ class HUE():
             numberBridgeId = numberBridgeId + 1
 
     def _update_bridges(self):
-        #
         # der datenabruf besteht aus dem befehl get configuration bridge
-        #
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
@@ -524,7 +526,6 @@ class HUE():
             numberBridgeId = numberBridgeId + 1
 
     def get_config(self, hueBridgeId='0'):
-        #
         # hier eine interaktive routing für di ecli, um den user herauszubekommen, 
         # mit dem die szenen gesetzt worden sind, um ihn dann als user für das plugin einzusetzen
         # und jetzt alle szenen
@@ -535,21 +536,16 @@ class HUE():
     def authorizeuser(self, hueBridgeId='0'):
         data = json.dumps(
             {"devicetype": "smarthome", "username": self._hue_user[int(hueBridgeId)]})
-
         con = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)])
         con.request("POST", "/api", data)
         resp = con.getresponse()
         con.close()
-
         if resp.status != 200:
             logger.error('HUE: authorize: Authenticate request failed')
             return "Authenticate request failed"
-
         resp = resp.read()
         logger.debug(resp)
-
         resp = json.loads(resp)
-
         logger.debug(resp)
         return resp
 
