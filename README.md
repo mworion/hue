@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 0.97 develop
+version 0.98 develop
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
@@ -146,6 +146,7 @@ Attribute            Type   Range                           Readable    Writable
 'timezone'           str    text                            yes         no
 
 'zigbeechannel'      num    1-13                            yes         no
+'errorstatus'        bool   False / True                    yes         no
 </pre>
 
 ### hue_send

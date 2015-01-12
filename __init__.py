@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 0.97 develop
+#  Version 0.98 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -82,7 +82,7 @@ class HUE():
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
         self._sendLampKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct']
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
-        self._listenBridgeKeys = ['bridge_name', 'zigbeechannel', 'mac', 'dhcp', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'swupdate', 'linkbutton', 'portalservices', 'portalconnection', 'portalstate', 'whitelist']
+        self._listenBridgeKeys = ['bridge_name', 'zigbeechannel', 'mac', 'dhcp', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'swupdate', 'linkbutton', 'portalservices', 'portalconnection', 'portalstate', 'whitelist','errorstatus']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
         self._sendBridgeKeys = ['scene']
         # hier ist die liste der einträge, für die ein dimmer DPT3 gesetzt werden kann
@@ -115,6 +115,10 @@ class HUE():
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
         # anstossen des updates zu beginn
         self._sh.trigger('hue-update-bridges', self._update_bridges)
+        # jetzt noch den bridge errorstatus default auf false setzen
+        if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
+            # wenn der item abgelegt ist, dann kann er auch gesetzt werden
+            self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](False,'HUE')
 
     def stop(self):
         self.alive = False
@@ -352,6 +356,9 @@ class HUE():
             connectionHueBridge.request(method, "/api/%s%s" % (self._hue_user[int(hueBridgeId)], path), data)
         except Exception as e:
             logger.error('HUE: _request: problem in http.client exception : {0} '.format(e))
+            if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
+                # wenn der item abgelegt ist, dann kann er auch gesetzt werden
+                self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](True,'HUE')
             if connectionHueBridge:
                 connectionHueBridge.close()
         else:
@@ -466,12 +473,16 @@ class HUE():
                             # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
                             if not self._listenLampItems[returnItem]._fading:
                                 # es werden nur die Einträge zurückgeschrieben, falls die Lampe nich im fading betrieb ist
-                                if hueBridgeId + '.' + hueLampId + '.on' in self._listenLampItems:
-                                    if self._listenLampItems[(hueBridgeId + '.' + hueLampId + '.on')]() or not hueObjectItem == 'bri':
-                                        # und falls die lampe aus ist, dann wird keine brightness zurückgeschrieben
-                                        # in allen anderen werden wie werte zurückgeschrieben
-                                        self._listenLampItems[returnItem](value, 'HUE')
-                  
+                                if hueObjectItem == 'bri':
+                                    # bei brightness gibt es eine fallunterscheidung
+                                    if hueBridgeId + '.' + hueLampId + '.on' in self._listenLampItems:
+                                        # geht aber nur, wenn ein solches item vorhanden ist
+                                        if self._listenLampItems[(hueBridgeId + '.' + hueLampId + '.on')]():
+                                            # die brightness darf nur bei lamp = on zurückgeschrieben werden, den bei aus ist sie immer 0
+                                            self._listenLampItems[returnItem](value, 'HUE')
+                                else:
+                                    # bei allen anderen kann zurückgeschrieben werden
+                                    self._listenLampItems[returnItem](value, 'HUE')
             self._hueBridgesLock.release()
             numberBridgeId = numberBridgeId + 1
 
