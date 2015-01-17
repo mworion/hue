@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 0.98 develop
+version 1.0 master
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
@@ -103,8 +103,6 @@ Attribute            Type   Range                           Readable    Writable
 Instead of implementing the 'xy' state attribute, 'col_r', 'col_g' and 'col_b' have been implemented to allow the color control directly from a SmartVISU widget (e.g. Colordisc).
 
 For a basic control of the the lights you only need to implement the first 4 to 5 attributes of the Lights API ('on', 'bri', 'hue', 'sat' and 'ct').  The rest of the attributes is only needed, if you want to do MORE. 
-
-
  
 #### Lights API (Lamp attributes)
 <pre>
@@ -148,6 +146,15 @@ Attribute            Type   Range                           Readable    Writable
 'zigbeechannel'      num    1-13                            yes         no
 'errorstatus'        bool   False / True                    yes         no
 </pre>
+
+#### Configuration API (Plugin related)
+<pre>
+Attribute            Type   Range                           Readable    Writable
+'errorstatus'        bool   False / True                    yes         no
+</pre>
+
+## hue_listen = errorstatus
+errorstatus represents the status of the link between sm.hy plugin and bridge. A status True reflects and error state in the communication.
 
 ### hue_send
 Specifies the writable attribute which is send to the lamp when this item is altered.
@@ -339,17 +346,18 @@ No logic attributes.
 
 # Methodes
 
-## authorizeuser()
-Authorizes the user configured by hue_user config property. You have to press the link button.
-<pre>
-sh.hue.authorizeuser()
-</pre>
-
 ## get_config()
 Drops the list of stored scenes in the bridge.
 Parameter the bridge id as string !
 <pre>
 sh.hue.get_config(hue_bridge_id)
 </pre>
+
+## authorizeuser()
+Authorizes the user configured by hue_user config property. You have to press the link button.
+<pre>
+sh.hue.authorizeuser()
+</pre>
+
 
 

@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 0.98 develop
+#  Version 1.0 master
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -25,16 +25,14 @@ import http.client
 import time
 import threading
 from plugins.hue.rgb_cie import Converter
-#import pydevd
 
 logger = logging.getLogger('HUE:')
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '5', cycle_bridges = '60', default_transitionTime = '0.4'):
+    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '10', cycle_bridges = '60', default_transitionTime = '0.4'):
 
         # parameter zu übergabe aus der konfiguration pulgin.conf
-#        pydevd.settrace('192.168.2.57')        
         self._sh = smarthome
         # parmeter übernehmen, aufteilen und leerzeichen herausnehmen
         self._hue_ip = hue_ip.replace(' ','').split(',')
