@@ -53,13 +53,13 @@ class HUE():
             logger.error('HUE: Error in plugin.conf: you have to specify all hue_port')
             raise Exception('HUE: Plugin stopped due to configuration fault in plugin.conf') 
         self._cycle_lamps = int(cycle_lamps)
-        if self._cycle_lamps < 3:
+        if self._cycle_lamps < 5:
             # beschränkung der wiederholrate 
-            self._cycle_lamps = 0
+            self._cycle_lamps = 5
         self._cycle_bridges = int(cycle_bridges)
-        if self._cycle_bridges < 3:
+        if self._cycle_bridges < 10:
             # beschränkung der wiederholrate 
-            self._cycle_lamps = 3
+            self._cycle_lamps = 10
         self._hueDefaultTransitionTime = float(default_transitionTime)
         if self._hueDefaultTransitionTime < 0:
             # beschränkung der wiederholrate 
