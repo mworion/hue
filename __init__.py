@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.1 develop
+#  Version 1.2 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -99,11 +99,6 @@ class HUE():
         self._rangeInteger16 = ['hue']
         # konvertierung rgb nach cie xy
         self._rgbConverter = Converter()
-
-    def run(self):
-        self.alive = True
-        # if you want to create child threads, do not make them daemon = True!
-        # They will not shutdown properly. (It's a python bug)
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
@@ -114,6 +109,11 @@ class HUE():
         # anstossen des updates zu beginn
         self._sh.trigger('hue-update-bridges', self._update_bridges)
         # jetzt noch den bridge errorstatus default auf false setzen
+
+    def run(self):
+        self.alive = True
+        # if you want to create child threads, do not make them daemon = True!
+        # They will not shutdown properly. (It's a python bug)
 
     def stop(self):
         self.alive = False
