@@ -352,7 +352,7 @@ class HUE():
     def _request(self, hueBridgeId='0', path='', method='GET', data=None):
         # hue bridge mit einem http request abfragen
         try:
-            connectionHueBridge = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)])
+            connectionHueBridge = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)], timeout = 2)
             connectionHueBridge.request(method, "/api/%s%s" % (self._hue_user[int(hueBridgeId)], path), data)
         except Exception as e:
             logger.error('HUE: _request: problem in http.client exception : {0} '.format(e))
