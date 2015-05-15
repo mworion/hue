@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.2 develop
+#  Version 1.3 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -25,6 +25,8 @@ import http.client
 import time
 import threading
 from plugins.hue.rgb_cie import Converter
+
+
 
 logger = logging.getLogger('HUE:')
 
@@ -93,6 +95,8 @@ class HUE():
         self._boolKeys = ['on', 'reachable', 'linkbutton', 'portalservices', 'dhcp']
         # hier ist die liste der einträge, für string
         self._dictKeys = ['portalstate', 'swupdate', 'whitelist']
+        # hier die abgefangenen fehlermeldungen in den connections, die auf das fehleritem gemapped werden
+        self._connErrors = ['Host is down', 'timed out', 'No route to host']
         # hier ist die liste der einträge, für wertebereich 0-255
         self._rangeInteger8 = ['bri', 'sat', 'col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für wertebereich 0-255
@@ -102,13 +106,8 @@ class HUE():
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
-        # anstossen des updates zu beginn
-        self._sh.trigger('hue-update-lamps', self._update_lamps)
         # scheduler für das polling der status der hue bridge
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
-        # anstossen des updates zu beginn
-        self._sh.trigger('hue-update-bridges', self._update_bridges)
-        # jetzt noch den bridge errorstatus default auf false setzen
 
     def run(self):
         self.alive = True
@@ -348,50 +347,98 @@ class HUE():
                 # das ist aus meiner sicht noch ein fehler in item.py
                 item.return_parent()(int(item.return_parent()() + 1), 'HUE_FADE')
                 item.return_parent()(int(item.return_parent()() - 1), 'HUE_FADE')
-                    
-    def _request(self, hueBridgeId='0', path='', method='GET', data=None):
-        # hue bridge mit einem http request abfragen
-        try:
-            connectionHueBridge = http.client.HTTPConnection(self._hue_ip[int(hueBridgeId)], timeout = 2)
-            connectionHueBridge.request(method, "/api/%s%s" % (self._hue_user[int(hueBridgeId)], path), data)
-        except Exception as e:
-            logger.error('HUE: _request: problem in http.client exception : {0} '.format(e))
-            if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
-                # wenn der item abgelegt ist, dann kann er auch gesetzt werden
-                self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](True,'HUE')
-            if connectionHueBridge:
-                connectionHueBridge.close()
+                
+    def _fetch_url_v2(self, url, auth=None, username=None, password=None, timeout=2, method='GET', headers={}, body=None, errorItem=None):
+        # im vergleich zu fetch_url habe ich einen error item, den ich setzen bei bekannten durch den user herbeigeführten connection fehlern
+        # und die entsprechende fehlerabfragen, damit ich das log nicht voll schreibe
+        plain = True
+        if url.startswith('https'):
+            plain = False
+        lurl = url.split('/')
+        host = lurl[2]
+        purl = '/' + '/'.join(lurl[3:])
+        path = host + purl
+        if plain:
+            conn = http.client.HTTPConnection(host, timeout=timeout)
         else:
-            responseRaw = connectionHueBridge.getresponse()
-            connectionHueBridge.close()
-            if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
-                # wenn der item abgelegt ist, dann kann er auch rückgesetzt werden
-                self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus'](False,'HUE')
-            # rückmeldung 200 ist OK
-            if responseRaw.status != 200:
-                logger.error('HUE: _request: response Raw: Request failed')
+            conn = http.client.HTTPSConnection(host, timeout=timeout)
+        if auth == 'basic':
+            headers['Authorization'] = self.basic_auth(username, password)
+        elif auth == 'digest' and path in self.__paths:
+            headers['Authorization'] = self.digest_auth(host, purl, {}, username, password, method)
+        try:
+            conn.request(method, purl, body, headers)
+            resp = conn.getresponse()
+        except Exception as e:
+            # jetzt suchen wir nach bekannten, definierten fehlern
+            if format(e) in self._connErrors:
+                # diese fehler bekommen einen status, der in der visu oder sonst genutzt werden kann
+                # wenn der item abgelegt ist, dann kann er auch gesetzt werden, wenn nicht schreiben wir halt ins log !
+                if errorItem != None:
+                    errorItem(True,'_request')
+                else:
+                    logger.warning('_request: error status set, not status item defined')
+            else:
+                logger.error('_request: problem in http.client exception : [{0}]'.format(e))
+            if conn:
+                conn.close()
                 return None
+        # ansonsten ist alles gut durchgelaufen, dann wird das item zurückgesetzt
+        if errorItem != None:
+            # wenn der item abgelegt ist, dann kann er auch rückgesetzt werden
+            errorItem(False,'_request')
+        # jetzt geht es an die auswertung der rueckmeldungen
+        # rückmeldung 200 ist OK
+        if resp.status == 200:
+            content = resp.read()
+        elif resp.status == 401 and auth == 'digest':
+            content = resp.read()
+            rheaders = self.parse_headers(resp.getheaders())
+            headers['Authorization'] = self.digest_auth(host, purl, rheaders, username, password, method)
+            conn.request(method, purl, body, headers)
+            resp = conn.getresponse()
+            content = resp.read()
+        else:
+            logger.warning("Problem fetching {0}: {1} {2}".format(url, resp.status, resp.reason))
+            content = None
+        conn.close()
+        return content
+
+    def  _get_web_content(self, hueBridgeId='0', path='', method='GET', body=None):
+        # in dieser routine erfolgt der umbau und die speziellen themen zur auswertung der verbindung, die speziell für das plugin ist
+        # erst einmal die komplette url
+        url = 'http://' + self._hue_ip[int(hueBridgeId)] + '/api/' + self._hue_user[int(hueBridgeId)] + path
+        # setzen des fehlerstatus items
+        if hueBridgeId + '.' + 'errorstatus' in self._listenBridgeItems:
+            errorItem = self._listenBridgeItems[hueBridgeId + '.' + 'errorstatus']
+        else:
+            errorItem = None
+            logger.warning(hueBridgeId)
+        # dann der aufruf kompatibel, aber inhaltlich nicht identisch fetch_url aus lib.www
+        response = self._fetch_url_v2(url, None, None, None, 2, method, {}, body, errorItem)
+        if response != None:
+            # und jetzt der anteil der decodierung, der nicht in der fetch_url drin ist
             # lesen, decodieren nach utf-8 (ist pflicht nach der api definition philips) und in ein python objekt umwandeln
-            responseJson = responseRaw.read().decode('utf-8')
-            response = json.loads(responseJson)
+            responseJson = response.decode('utf-8')
+            returnValues = json.loads(responseJson)
             # fehlerauswertung der rückmeldung, muss noch vervollständigt werden
-            if isinstance(response, list) and response[0].get('error', None):
-                error = response[0]["error"]
+            if isinstance(returnValues, list) and returnValues[0].get('error', None):
+                error = returnValues[0]["error"]
                 description = error['description']
                 if error['type'] == 1:
                     logger.error('HUE: _request: Error: {0} (Need to specify correct hue user?)'.format(description))
                 else:
                     logger.error('HUE: _request: Error: {0}'.format(description))
                 return None
-            else:
-                return response
+            return returnValues
+        else:
+            return None
 
     def _set_lamp_state(self, hueBridgeId, hueLampId, state):
         # hier erfolgt das setzen des status einer lampe
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen
-        returnValues = self._request(hueBridgeId, "/lights/%s/state" % hueLampId, "PUT", json.dumps(state))
+        returnValues = self._get_web_content(hueBridgeId, '/lights/%s/state' % hueLampId, 'PUT', json.dumps(state))
         if returnValues == None:
-            logger.warning('HUE: hue_set_state - returnValues None')
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
         self._hueLampsLock.acquire()
@@ -422,12 +469,10 @@ class HUE():
         self._hueLampsLock.release()
 
     def _set_group_state(self, hueBridgeId, hueGroupId , state):
-        # hier erfolgt das setzen des status einer gruppe
-        # im Moment ist nur der abruf einer szene implementiert
+        # hier erfolgt das setzen des status einer gruppe im Moment ist nur der abruf einer szene implementiert
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen
-        returnValues = self._request(hueBridgeId, "/groups/%s/action" % hueGroupId, "PUT", json.dumps(state))
+        returnValues = self._get_web_content(hueBridgeId, '/groups/%s/action' % hueGroupId, 'PUT', json.dumps(state))
         if returnValues == None:
-            logger.warning('HUE: hue_set_group_state - returnValues None')
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
         self._hueLampsLock.acquire()
@@ -436,7 +481,7 @@ class HUE():
                 if hueObjectStatus == 'success':
                     pass
                 else:
-                    logger.warning('HUE: hue_set_group_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
+                    logger.warning('HUE: _set_group_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
         self._hueLampsLock.release()
 
     def _update_lamps(self):
@@ -445,7 +490,7 @@ class HUE():
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
-            returnValues = self._request(hueBridgeId, '/lights')
+            returnValues = self._get_web_content(hueBridgeId, '/lights')
             if returnValues == None:
                 return
             # schleife über alle gefundenen lampen
@@ -493,7 +538,7 @@ class HUE():
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
-            returnValues = self._request(hueBridgeId, '/config')
+            returnValues = self._get_web_content(hueBridgeId, '/config')
             if returnValues == None:
                 return
             # schleife über alle gefundenen lampen
@@ -527,9 +572,9 @@ class HUE():
         # hier eine interaktive routing für di ecli, um den user herauszubekommen, 
         # mit dem die szenen gesetzt worden sind, um ihn dann als user für das plugin einzusetzen
         # und jetzt alle szenen
-        response = self._request(hueBridgeId, '/scenes')
-        logger.warning('HUE: get_config: scenes {0}'.format(response))
-        return response
+        returnValues = self._get_webcontent(hueBridgeId, '/scenes')
+        logger.warning('HUE: get_config: scenes {0}'.format(returnValues))
+        return returnValues
 
     def authorizeuser(self, hueBridgeId='0'):
         data = json.dumps(
