@@ -144,7 +144,6 @@ Attribute            Type   Range                           Readable    Writable
 'timezone'           str    text                            yes         no
 
 'zigbeechannel'      num    1-13                            yes         no
-'errorstatus'        bool   False / True                    yes         no
 </pre>
 
 #### Configuration API (Plugin related)
@@ -154,7 +153,7 @@ Attribute            Type   Range                           Readable    Writable
 </pre>
 
 ## hue_listen = errorstatus
-errorstatus represents the status of the link between sm.hy plugin and bridge. A status True reflects and error state in the communication.
+errorstatus represents the status of the link between smarthome plugin and bridge. A status True reflects and error state in the communication.
 
 ### hue_send
 Specifies the writable attribute which is send to the lamp when this item is altered.
