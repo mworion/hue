@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 1.3 develop
+version 1.4 develop
 
 # Requirements
 Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
@@ -77,6 +77,12 @@ Specify the lamp id. Via this parameter the right lamp on the hue connection is 
 The numbers are the corresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
 hue_bridge_id attached to this item as well. If not, a default value of 0 will be set.
 
+### hue_lamp_type
+Specify the lamp type because of different color garamut parameters
+Default would be 0 if not defined. There are currently two groups of lamps:
+Group 0 consists of hue bulb lamps, there hue_lamp_type = 0
+Group 1 consists of LivingColors Bloom, Aura and Iris lamps, there hue_lamp_type = 1
+
 ## Commands and Parameters supported
 Please refer to the specs of the API 1.4 of the hue at http://www.developers.meethue.com/documentation/lights-api.
 Readable means you can set a hue_listen attribute in a item with the corresponding name
@@ -144,6 +150,7 @@ Attribute            Type   Range                           Readable    Writable
 'timezone'           str    text                            yes         no
 
 'zigbeechannel'      num    1-13                            yes         no
+'errorstatus'        bool   False / True                    yes         no
 </pre>
 
 #### Configuration API (Plugin related)
@@ -153,7 +160,7 @@ Attribute            Type   Range                           Readable    Writable
 </pre>
 
 ## hue_listen = errorstatus
-errorstatus represents the status of the link between smarthome plugin and bridge. A status True reflects and error state in the communication.
+errorstatus represents the status of the link between sm.hy plugin and bridge. A status True reflects and error state in the communication.
 
 ### hue_send
 Specifies the writable attribute which is send to the lamp when this item is altered.

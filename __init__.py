@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.3 develop
+#  Version 1.4 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -17,17 +17,21 @@
 #  http://www.developers.meethue.com/documentation/lights-api finden kann
 #
 #  APL2.0
+#
+#  Library for RGB / CIE1931 coversion ported from Bryan Johnson's JavaScript implementation:
+#  https://github.com/bjohnso5/hue-hacking
+# extesion to use differen triangle points depending of the type of the hue system
 # 
 
 import logging
 import json
+import math
+from collections import namedtuple
 import http.client
 import time
 import threading
-from plugins.hue.rgb_cie import Converter
 
-
-
+XY = namedtuple('XY', ['x', 'y'])
 logger = logging.getLogger('HUE:')
 
 class HUE():
@@ -96,19 +100,99 @@ class HUE():
         # hier ist die liste der einträge, für string
         self._dictKeys = ['portalstate', 'swupdate', 'whitelist']
         # hier die abgefangenen fehlermeldungen in den connections, die auf das fehleritem gemapped werden
-        self._connErrors = ['Host is down', 'timed out', 'No route to host']
+        self._connErrors = ['Host is down', 'timed out', '[Errno 113] No route to host']
         # hier ist die liste der einträge, für wertebereich 0-255
         self._rangeInteger8 = ['bri', 'sat', 'col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für wertebereich 0-255
         self._rangeInteger16 = ['hue']
-        # konvertierung rgb nach cie xy
-        self._rgbConverter = Converter()
+        # konfiguration farbumrechnung. es gibt im Moment 2 lampentypgruppen:
+        # hue bulb the corners index 0 [0] für LivingColors Bloom, Aura and Iris index 1 [1]
+        self._numberHueLampTypes=2
+        self.Red = [XY(0.674, 0.322), XY(0.703, 0.296)]
+        self.Lime =[XY(0.408, 0.517), XY(0.214, 0.709)]
+        self.Blue =[XY(0.168, 0.041), XY(0.139, 0.081)]
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
         # scheduler für das polling der status der hue bridge
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
 
+    def crossProduct(self, p1, p2):
+        """Returns the cross product of two XYPoints."""
+        return (p1.x * p2.y - p1.y * p2.x)
+        
+    def checkPointInLampsReach(self, p, lampType):
+        """Check if the provided XYPoint can be recreated by a Hue lamp."""
+        v1 = XY(self.Lime[lampType].x - self.Red[lampType].x, self.Lime[lampType].y - self.Red[lampType].y)
+        v2 = XY(self.Blue[lampType].x - self.Red[lampType].x, self.Blue[lampType].y - self.Red[lampType].y)
+
+        q = XY(p.x - self.Red[lampType].x, p.y - self.Red[lampType].y)
+        s = self.crossProduct(q, v2) / self.crossProduct(v1, v2)
+        t = self.crossProduct(v1, q) / self.crossProduct(v1, v2)
+
+        return (s >= 0.0) and (t >= 0.0) and (s + t <= 1.0)
+
+    def getClosestPointToLine(self, A, B, P):
+
+        AP = XY(P.x - A.x, P.y - A.y)
+        AB = XY(B.x - A.x, B.y - A.y)
+        ab2 = AB.x * AB.x + AB.y * AB.y
+        ap_ab = AP.x * AB.x + AP.y * AB.y
+        t = ap_ab / ab2
+        if t < 0.0:
+            t = 0.0
+        elif t > 1.0:
+            t = 1.0
+        return XY(A.x + AB.x * t, A.y + AB.y * t)
+
+    def getClosestPointToPoint(self, xyPoint, lampType):
+        # Color is unreproducible, find the closest point on each line in the CIE 1931 'triangle'.
+        pAB = self.getClosestPointToLine(self.Red[lampType], self.Lime[lampType], xyPoint)
+        pAC = self.getClosestPointToLine(self.Blue[lampType], self.Red[lampType], xyPoint)
+        pBC = self.getClosestPointToLine(self.Lime[lampType], self.Blue[lampType], xyPoint)
+        # Get the distances per point and see which point is closer to our Point.
+        dAB = self.getDistanceBetweenTwoPoints(xyPoint, pAB)
+        dAC = self.getDistanceBetweenTwoPoints(xyPoint, pAC)
+        dBC = self.getDistanceBetweenTwoPoints(xyPoint, pBC)
+        lowest = dAB
+        closestPoint = pAB
+        if (dAC < lowest):
+            lowest = dAC
+            closestPoint = pAC
+        if (dBC < lowest):
+            lowest = dBC
+            closestPoint = pBC
+        # Change the xy value to a value which is within the reach of the lamp.
+        cx = closestPoint.x
+        cy = closestPoint.y
+        return XY(cx, cy)
+
+    def getDistanceBetweenTwoPoints(self, one, two):
+        """Returns the distance between two XYPoints."""
+        dx = one.x - two.x
+        dy = one.y - two.y
+        return math.sqrt(dx * dx + dy * dy) 
+    
+    def getXYPointFromRGB(self, red, green, blue, lampType):
+
+        r = ((red + 0.055) / (1.0 + 0.055))**2.4 if (red > 0.04045) else (red / 12.92)
+        g = ((green + 0.055) / (1.0 + 0.055))**2.4 if (green > 0.04045) else (green / 12.92)
+        b = ((blue + 0.055) / (1.0 + 0.055))**2.4 if (blue > 0.04045) else (blue / 12.92)
+        X = r * 0.4360747 + g * 0.3850649 + b * 0.0930804
+        Y = r * 0.2225045 + g * 0.7168786 + b * 0.0406169
+        Z = r * 0.0139322 + g * 0.0971045 + b * 0.7141733
+        if X + Y + Z == 0:
+            cx = cy = 0
+        else:
+            cx = X / (X + Y + Z)
+            cy = Y / (X + Y + Z)
+        # Check if the given XY value is within the colourreach of our lamps.
+        xyPoint = XY(cx, cy)
+        inReachOfLamps = self.checkPointInLampsReach(xyPoint, lampType)
+        if not inReachOfLamps:
+            xyPoint = self.getClosestPointToPoint(xyPoint, lampType)
+        return [xyPoint.x, xyPoint.y]
+    
     def run(self):
         self.alive = True
         # if you want to create child threads, do not make them daemon = True!
@@ -126,16 +210,18 @@ class HUE():
             itemSearch = itemSearch.return_parent()                    
             if (itemSearch is self._sh):
                 if attribute == 'hue_bridge_id' and self._numberHueBridges > 1:
-                    logger.warning('HUE: _find_item_attribute: could not find [{0}  ] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
+                    logger.warning('HUE: _find_item_attribute: could not find [{0}] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
+                elif attribute == 'hue_lamp_type':
+                    logger.warning('HUE: _find_item_attribute: could not find [{0}] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
                 elif attribute == 'hue_lamp_id':
-                    logger.error('HUE: _find_item_attribute: could not find [{0}  ] for item [{1}], an value has to be defined'.format(attribute, item))
+                    logger.error('HUE: _find_item_attribute: could not find [{0}] for item [{1}], an value has to be defined'.format(attribute, item))
                     raise Exception('HUE: Plugin stopped due to missing hue_lamp_id in item.conf')
                 # wenn nicht gefunden, dann wird der standardwert zurückgegeben
                 return str(attributeDefault)
         itemAttribute = int(itemSearch.conf[attribute])
         if itemAttribute >= attributeLimit:
             itemAttribute = attributeLimit
-            logger.warning('HUE: _find_item_attribute: attribute exceeds upper limit and set to default in item [{0}]'.format(item))
+            logger.warning('HUE: _find_item_attribute: attribute [{0}] exceeds upper limit and set to default in item [{1}]'.format(attribute,item))
 #        logger.warning('HUE: _find_item_attribute: attribute [{0}] found for item [{1}] at item [{2}]'.format(attribute, item, itemSearch))
         return str(itemAttribute)
     
@@ -159,8 +245,10 @@ class HUE():
             if hueListenCommand in self._listenLampKeys:
                 # wir haben ein sendekommando für die lampen. dafür brauchen wir die bridge und die lampen id
                 hueLampId = self._find_item_attribute(item, 'hue_lamp_id', 1)
+                hueLampType = self._find_item_attribute(item, 'hue_lamp_type', 0, self._numberHueLampTypes)
                 hueBridgeId = self._find_item_attribute(item, 'hue_bridge_id', 0, self._numberHueBridges)
                 item.conf['hue_lamp_id'] = hueLampId
+                item.conf['hue_lamp_type'] = hueLampType
                 item.conf['hue_bridge_id'] = hueBridgeId
                 hueIndex = hueBridgeId + '.' + hueLampId + '.' + hueListenCommand
                 if not hueIndex in self._listenLampItems:
@@ -184,8 +272,10 @@ class HUE():
             if hueSendCommand in self._sendLampKeys:
                 # wir haben ein sendekommando für die lampen. dafür brauchen wir die bridge und die lampen id
                 hueLampId = self._find_item_attribute(item, 'hue_lamp_id', 1)
+                hueLampType = self._find_item_attribute(item, 'hue_lamp_type', 0, self._numberHueLampTypes)
                 hueBridgeId = self._find_item_attribute(item, 'hue_bridge_id', 0, self._numberHueBridges)
                 item.conf['hue_lamp_id'] = hueLampId
+                item.conf['hue_lamp_type'] = hueLampType
                 item.conf['hue_bridge_id'] = hueBridgeId
                 hueIndex = hueBridgeId + '.' + hueLampId + '.' + hueSendCommand
                 if not hueIndex in self._sendLampItems:
@@ -217,8 +307,7 @@ class HUE():
         return value
    
     def update_lamp_item(self, item, caller=None, source=None, dest=None):
-        # methode, die bei einer änderung des items ausgerufen wird
-        # wenn die änderung von aussen kommt, dann wird diese abgearbeitet
+        # methode, die bei einer änderung des items ausgerufen wird wenn die änderung von aussen kommt, dann wird diese abgearbeitet
         # im konkreten fall heisst das, dass der aktuelle status der betroffene lampe komplett zusammengestellt wird
         # und anschliessen neu über die hue bridge gesetzt wird.
         if caller != 'HUE':
@@ -226,6 +315,7 @@ class HUE():
             value = item()
             hueBridgeId = item.conf['hue_bridge_id']
             hueLampId = item.conf['hue_lamp_id']
+            hueLampType = item.conf['hue_lamp_type']
             hueSend = item.conf['hue_send']
             if 'hue_transitionTime' in item.conf:
                 hueTransitionTime = int(float(item.conf['hue_transitionTime']) * 10)
@@ -255,8 +345,7 @@ class HUE():
             if hueLampIsOn:
                 # lampe ist an (status in sh). dann können alle befehle gesendet werden
                 if hueSend == 'on':
-                    # wenn der status in sh true ist, aber mit dem befehl on, dann muss die lampe 
-                    # auf der hue seite erst eingeschaltet werden
+                    # wenn der status in sh true ist, aber mit dem befehl on, dann muss die lampe auf der hue seite erst eingeschaltet werden
                     if hueIndex + '.bri' in self._sendLampItems:
                         # wenn eingeschaltet wird und ein bri item vorhanden ist, dann wird auch die hellgkeit
                         # mit gesetzt, weil die lmape das im ausgeschalteten zustand vergisst.
@@ -270,20 +359,14 @@ class HUE():
                     if hueSend in self._rgbKeys:
                         # besonderheit ist der befehl für die rgb variante, da hier alle werte herausgesucht werden müssen
                         if ((hueIndex + '.col_r') in self._sendLampItems) and ((hueIndex + '.col_g') in self._sendLampItems) and ((hueIndex + '.col_b') in self._sendLampItems):
-                            # wertebereiche der anderen klären
-                            # bri darf zwischen 0 und 255 liegen
+                            # wertebereiche der anderen klären bri darf zwischen 0 und 255 liegen
                             value_r = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_r')](), 0, 255)    
                             value_g = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_g')](), 0, 255)    
                             value_b = self._limit_range_int(self._sendLampItems[(hueIndex + '.col_b')](), 0, 255)    
-                            # umrechnung mit try, da es zu division durch 0 kommt (beobachtung)
-                            try:
-                                # umrechnung
-                                xyPoint = self._rgbConverter.rgbToCIE1931(value_r, value_g, value_b)
-                            except Exception as e:
-                                logger.error('HUE: update_lamp_item: problem in library rgbToCIE1931 exception : {0} '.format(e))
-                            else:
-                                # und jetzt der wert setzen
-                                self._set_lamp_state(hueBridgeId, hueLampId, {'xy': xyPoint, 'transitiontime': hueTransitionTime})
+
+                            xyPoint = self.getXYPointFromRGB(value_r, value_g, value_b, int(hueLampType))
+                            # und jetzt der wert setzen
+                            self._set_lamp_state(hueBridgeId, hueLampId, {'xy': xyPoint, 'transitiontime': hueTransitionTime})
                         else:
                             logger.warning('HUE: update_lamp_item: on or more of the col... items around item [{0}] is not defined'.format(item))
                     else:
