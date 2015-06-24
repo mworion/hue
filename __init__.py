@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.4 develop
+#  Version 1.5 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -75,6 +75,9 @@ class HUE():
         # hier werden alle bekannte items für lampen eingetragen
         self._sendLampItems = {}
         self._listenLampItems = {}
+        # hier werden alle bekannte items für lampen eingetragen
+        self._sendGroupItems = {}
+        self._listenGroupItems = {}
         # hier werden alle bekannte items für die hues eingetragen
         self._sendBridgeItems = {}
         self._listenBridgeItems = {}
@@ -85,6 +88,10 @@ class HUE():
         self._listenLampKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'swversion', 'ct']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
         self._sendLampKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct']
+        # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
+        self._listenGroupKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'ct']
+        # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
+        self._sendGroupKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'ct']
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenBridgeKeys = ['bridge_name', 'zigbeechannel', 'mac', 'dhcp', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'swupdate', 'linkbutton', 'portalservices', 'portalconnection', 'portalstate', 'whitelist','errorstatus']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
@@ -114,26 +121,23 @@ class HUE():
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
+        # scheduler für das polling der status der lampen über die hue bridge
+        # cycle groups ist gleich dem cycle für die lamps
+        self._sh.scheduler.add('hue-update-groups', self._update_groups, cycle = self._cycle_lamps)
         # scheduler für das polling der status der hue bridge
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
 
+    ### following the library parts of the rewritten topics
     def crossProduct(self, p1, p2):
-        """Returns the cross product of two XYPoints."""
         return (p1.x * p2.y - p1.y * p2.x)
-        
     def checkPointInLampsReach(self, p, lampType):
-        """Check if the provided XYPoint can be recreated by a Hue lamp."""
         v1 = XY(self.Lime[lampType].x - self.Red[lampType].x, self.Lime[lampType].y - self.Red[lampType].y)
         v2 = XY(self.Blue[lampType].x - self.Red[lampType].x, self.Blue[lampType].y - self.Red[lampType].y)
-
         q = XY(p.x - self.Red[lampType].x, p.y - self.Red[lampType].y)
         s = self.crossProduct(q, v2) / self.crossProduct(v1, v2)
         t = self.crossProduct(v1, q) / self.crossProduct(v1, v2)
-
         return (s >= 0.0) and (t >= 0.0) and (s + t <= 1.0)
-
     def getClosestPointToLine(self, A, B, P):
-
         AP = XY(P.x - A.x, P.y - A.y)
         AB = XY(B.x - A.x, B.y - A.y)
         ab2 = AB.x * AB.x + AB.y * AB.y
@@ -144,13 +148,10 @@ class HUE():
         elif t > 1.0:
             t = 1.0
         return XY(A.x + AB.x * t, A.y + AB.y * t)
-
     def getClosestPointToPoint(self, xyPoint, lampType):
-        # Color is unreproducible, find the closest point on each line in the CIE 1931 'triangle'.
         pAB = self.getClosestPointToLine(self.Red[lampType], self.Lime[lampType], xyPoint)
         pAC = self.getClosestPointToLine(self.Blue[lampType], self.Red[lampType], xyPoint)
         pBC = self.getClosestPointToLine(self.Lime[lampType], self.Blue[lampType], xyPoint)
-        # Get the distances per point and see which point is closer to our Point.
         dAB = self.getDistanceBetweenTwoPoints(xyPoint, pAB)
         dAC = self.getDistanceBetweenTwoPoints(xyPoint, pAC)
         dBC = self.getDistanceBetweenTwoPoints(xyPoint, pBC)
@@ -162,19 +163,14 @@ class HUE():
         if (dBC < lowest):
             lowest = dBC
             closestPoint = pBC
-        # Change the xy value to a value which is within the reach of the lamp.
         cx = closestPoint.x
         cy = closestPoint.y
         return XY(cx, cy)
-
     def getDistanceBetweenTwoPoints(self, one, two):
-        """Returns the distance between two XYPoints."""
         dx = one.x - two.x
         dy = one.y - two.y
         return math.sqrt(dx * dx + dy * dy) 
-    
     def getXYPointFromRGB(self, red, green, blue, lampType):
-
         r = ((red + 0.055) / (1.0 + 0.055))**2.4 if (red > 0.04045) else (red / 12.92)
         g = ((green + 0.055) / (1.0 + 0.055))**2.4 if (green > 0.04045) else (green / 12.92)
         b = ((blue + 0.055) / (1.0 + 0.055))**2.4 if (blue > 0.04045) else (blue / 12.92)
@@ -186,12 +182,12 @@ class HUE():
         else:
             cx = X / (X + Y + Z)
             cy = Y / (X + Y + Z)
-        # Check if the given XY value is within the colourreach of our lamps.
         xyPoint = XY(cx, cy)
         inReachOfLamps = self.checkPointInLampsReach(xyPoint, lampType)
         if not inReachOfLamps:
             xyPoint = self.getClosestPointToPoint(xyPoint, lampType)
         return [xyPoint.x, xyPoint.y]
+    ### end of library files
     
     def run(self):
         self.alive = True
@@ -209,6 +205,7 @@ class HUE():
             # eine Stufe in den ebenen nach oben
             itemSearch = itemSearch.return_parent()                    
             if (itemSearch is self._sh):
+                # wir sind am root knoten angekommen und haben nichts gefunden !
                 if attribute == 'hue_bridge_id' and self._numberHueBridges > 1:
                     logger.warning('HUE: _find_item_attribute: could not find [{0}] for item [{1}], setting defined default value {2}'.format(attribute, item, attributeDefault))
                 elif attribute == 'hue_lamp_type':
@@ -266,6 +263,21 @@ class HUE():
                     logger.warning('HUE: parse_item: in bridge item [{0}] command hue_listen = {1} is duplicated to item  [{2}]'.format(item,hueListenCommand,self._listenLampItems[hueIndex]))
             else:
                 logger.error('HUE: parse_item: command hue_listen = {0} not defined in item [{1}]'.format(hueListenCommand,item))
+
+        # für die groups brauchen wir eine eigenes listen attribut, weil die kommandos gleich denen der lampen sind damit schwer nur unterscheidbar
+        if 'hue_listen_group' in item.conf:
+            hueListenGroupCommand = item.conf['hue_listen_group']
+            if hueListenGroupCommand in self._listenGroupKeys:
+                # wir haben ein sendekommando für die lampen. dafür brauchen wir die bridge und die lampen id
+                hueGroupId = self._find_item_attribute(item, 'hue_group_id', 1)
+                hueBridgeId = self._find_item_attribute(item, 'hue_bridge_id', 0, self._numberHueBridges)
+                item.conf['hue_group_id'] = hueGroupId
+                item.conf['hue_bridge_id'] = hueBridgeId
+                hueIndex = hueBridgeId + '.' + hueGroupId + '.' + hueListenGroupCommand
+                if not hueIndex in self._listenGroupItems:
+                    self._listenGroupItems[hueIndex] = item
+                else:
+                    logger.warning('HUE: parse_item: in group item [{0}] command hue_listen_group = {1} is duplicated to item  [{2}]'.format(item,hueListenGroupCommand,self._listenGroupItems[hueIndex]))
         
         if 'hue_send' in item.conf:
             hueSendCommand = item.conf['hue_send']
@@ -295,6 +307,22 @@ class HUE():
                 return self.update_bridge_item
             else:
                 logger.error('HUE: parse_item: command hue_send = {0} not defined in item [{1}]'.format(hueSendCommand,item))
+
+        # für die groups brauchen wir eine eigenes listen attribut, weil die kommandos gleich denen der lampen sind damit schwer nur unterscheidbar
+        if 'hue_send_group' in item.conf:
+            hueSendGroupCommand = item.conf['hue_send_group']
+            if hueSendGroupCommand in self._sendGroupKeys:
+                # wir haben ein sendekommando für die lampen. dafür brauchen wir die bridge und die group id
+                hueGroupId = self._find_item_attribute(item, 'hue_group_id', 1)
+                hueBridgeId = self._find_item_attribute(item, 'hue_bridge_id', 0, self._numberHueBridges)
+                item.conf['hue_group_id'] = hueGroupId
+                item.conf['hue_bridge_id'] = hueBridgeId
+                hueIndex = hueBridgeId + '.' + hueGroupId + '.' + hueSendGroupCommand
+                if not hueIndex in self._sendGroupItems:
+                    self._sendGroupItems[hueIndex] = item
+                else:
+                    logger.warning('HUE: parse_item: in group item [{0}] command hue_send_group = {1} is duplicated to item  [{2}]'.format(item,hueSendGroupCommand,self._sendGroupItems[hueIndex]))
+                return self.update_group_item
 
     def _limit_range_int(self, value, minValue, maxValue):
         # kurze routine zur wertebegrenzung
@@ -386,6 +414,71 @@ class HUE():
                     else:
                         # ansonsten wird kein befehl abgesetzt !
                         pass
+
+    def update_group_item(self, item, caller=None, source=None, dest=None):
+        # methode, die bei einer änderung des items ausgerufen wird wenn die änderung von aussen kommt, dann wird diese abgearbeitet
+        # im konkreten fall heisst das, dass der aktuelle status der betroffene lampe komplett zusammengestellt wird
+        # und anschliessen neu über die hue bridge gesetzt wird.
+        if caller != 'HUE':
+            # lokale speicherung in variablen, damit funktionen nicht immer aufgerufen werden (performance)
+            value = item()
+            hueBridgeId = item.conf['hue_bridge_id']
+            hueGroupId = item.conf['hue_group_id']
+            hueSendGroup = item.conf['hue_send_group']
+            if 'hue_transitionTime' in item.conf:
+                hueTransitionTime = int(float(item.conf['hue_transitionTime']) * 10)
+            else:
+                hueTransitionTime = int(self._hueDefaultTransitionTime * 10)
+
+            # index ist immer bridge_id + lamp_id + hue_send
+            hueIndex = hueBridgeId + '.' + hueGroupId
+            
+            if hueIndex + '.on' in self._sendGroupItems:
+                hueGroupIsOn = self._sendGroupItems[(hueIndex + '.on')]()
+            else:
+                logger.warning('HUE: update_group_item: no item for on/off defined for bridge {0} group {1}'.format(hueBridgeId, hueGroupId))
+                hueGroupIsOn = False
+                
+            # test aus die wertgrenzen, die die bridge verstehen kann
+            if hueSendGroup in self._rangeInteger8:
+                # werte dürfen zwischen 0 und 255 liegen
+                value = self._limit_range_int(value, 0, 255)    
+            if hueSendGroup in self._rangeInteger16:
+                # hue darf zwischen 0 und 65535 liegen
+                value = self._limit_range_int(value, 0, 65535)    
+            if hueSendGroup == 'ct':
+                # hue darf zwischen 0 und 65535 liegen
+                value = self._limit_range_int(value, 153, 500)
+                
+            if hueGroupIsOn:
+                # lampe ist an (status in sh). dann können alle befehle gesendet werden
+                if hueSendGroup == 'on':
+                    # wenn der status in sh true ist, aber mit dem befehl on, dann muss die lampe auf der hue seite erst eingeschaltet werden
+                    if hueIndex + '.bri' in self._sendLampItems:
+                        # wenn eingeschaltet wird und ein bri item vorhanden ist, dann wird auch die hellgkeit
+                        # mit gesetzt, weil die gruppe das im ausgeschalteten zustand vergisst.
+                        self._set_group_state(hueBridgeId, hueGroupId, {'on': True, 'bri': int(self._sendLampItems[(hueIndex + '.bri')]()) , 'transitiontime': hueTransitionTime})
+                    else:
+                        # ansonst wird nur eingeschaltet
+                        self._set_group_state(hueBridgeId, hueGroupId, {'on': True , 'transitiontime': hueTransitionTime})
+                        logger.info('HUE: update_lamp_item: no bri item defined for restoring the brightness after swiching on again')                        
+                else:
+                    # standardbefehle
+                    self._set_group_state(hueBridgeId, hueGroupId, {hueSendGroup: value, 'transitiontime': hueTransitionTime})
+            else:
+                # lampe ist im status bei sh aus. in diesem zustand sollten keine befehle gesendet werden
+                if hueSendGroup == 'on':
+                    # sonderfall, wenn der status die transition erst ausgeöst hat, dann muss die gruppe
+                    # auf der hue seite erst ausgeschaltet werden
+                    self._set_group_state(hueBridgeId, hueGroupId, {'on': False , 'transitiontime': hueTransitionTime})
+                else:
+                    # die lampe kann auch über das senden bri angemacht werden
+                    if hueSendGroup == 'bri':
+                        # jetzt wird die gruppe eingeschaltet und der wert von bri auf den letzten wert gesetzt
+                        self._set_group_state(hueBridgeId, hueGroupId, {'on': True , 'bri': value, 'transitiontime': hueTransitionTime})
+                    else:
+                        # ansonsten wird kein befehl abgesetzt !
+                        pass                           
                            
     def update_bridge_item(self, item, caller=None, source=None, dest=None):
         # methode, die bei einer änderung des items ausgerufen wird
@@ -489,6 +582,7 @@ class HUE():
 
     def  _get_web_content(self, hueBridgeId='0', path='', method='GET', body=None):
         # in dieser routine erfolgt der umbau und die speziellen themen zur auswertung der verbindung, die speziell für das plugin ist
+        # der rest sollte standard in der routine fetch_url() enthalten sein. leider fehlt dort aber die auswertung der fehllerconditions
         # erst einmal die komplette url
         url = 'http://' + self._hue_ip[int(hueBridgeId)] + '/api/' + self._hue_user[int(hueBridgeId)] + path
         # setzen des fehlerstatus items
@@ -616,6 +710,55 @@ class HUE():
             self._hueBridgesLock.release()
             numberBridgeId = numberBridgeId + 1
 
+    def _update_groups(self):
+        # mache ich mit der API get all groups
+        # hier kommt der PUT request, um die stati an die hue bridge zu übertragen beispiel:
+        numberBridgeId = 0
+        while numberBridgeId < self._numberHueBridges:
+            hueBridgeId = str(numberBridgeId)
+            returnValues = self._get_web_content(hueBridgeId, '/groups')
+            if returnValues == None:
+                return
+            # schleife über alle gefundenen lampen
+            self._hueBridgesLock.acquire()
+            for hueGroupId, hueGroupIdValues in returnValues.items():
+                # schleife über alle rückmeldungen der lampen.
+                # jetzt muss ich etwas tricksen, da die states eine ebene tiefer als die restlichen infos der lampe liegen
+                # in den items ist das aber eine flache hierachie. um nur eine schleife darüber zu haben, baue ich mir ein
+                # entsprechendes dict zusammen. 'state' ist zwar doppelt drin, stört aber nicht, da auch auf unterer ebene.
+                dictOptimized = hueGroupIdValues['state'].copy()
+                dictOptimized.update(returnValues[hueGroupId].items())
+                # jetzt kann der durchlauf beginnen
+                for hueObjectItem, hueObjectItemValue in dictOptimized.items():
+                    # nachdem alle objekte und werte auf die gleiche ebene gebracht wurden, beginnt die zuordnung
+                    # vor hier an werden die ganzen listen items durchgesehen und die werte aus der rückmeldung zugeordnet
+                    for returnItem in self._listenGroupItems:
+                        # wenn ein listen item angelegt wurde und dafür ein status zurückkam
+                        # verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
+                        if returnItem == (hueBridgeId + '.' + hueGroupId + '.' + hueObjectItem):
+                            # dafür wir der reale wert der hue bridge gesetzt
+                            if hueObjectItem in self._boolKeys:
+                                value = bool(hueObjectItemValue)
+                            elif hueObjectItem in self._stringKeys:
+                                value = str(hueObjectItemValue)
+                            else:
+                                value = int(hueObjectItemValue)
+                            # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
+                            if not self._listenGroupItems[returnItem]._fading:
+                                # es werden nur die Einträge zurückgeschrieben, falls die Lampe nich im fading betrieb ist
+                                if hueObjectItem == 'bri':
+                                    # bei brightness gibt es eine fallunterscheidung
+                                    if hueBridgeId + '.' + hueGroupId + '.on' in self._listenGroupItems:
+                                        # geht aber nur, wenn ein solches item vorhanden ist
+                                        if self._listenGroupItems[(hueBridgeId + '.' + hueGroupId + '.on')]():
+                                            # die brightness darf nur bei lamp = on zurückgeschrieben werden, den bei aus ist sie immer 0
+                                            self._listenGroupItems[returnItem](value, 'HUE')
+                                else:
+                                    # bei allen anderen kann zurückgeschrieben werden
+                                    self._listenLampItems[returnItem](value, 'HUE')
+            self._hueBridgesLock.release()
+            numberBridgeId = numberBridgeId + 1
+
     def _update_bridges(self):
         # der datenabruf besteht aus dem befehl get configuration bridge
         numberBridgeId = 0
@@ -656,7 +799,9 @@ class HUE():
         # mit dem die szenen gesetzt worden sind, um ihn dann als user für das plugin einzusetzen
         # und jetzt alle szenen
         returnValues = self._get_webcontent(hueBridgeId, '/scenes')
-        logger.warning('HUE: get_config: scenes {0}'.format(returnValues))
+        logger.warning('HUE: get_config: Scenes {0}'.format(returnValues))
+        returnValues = self._get_webcontent(hueBridgeId, '/groups')
+        logger.warning('HUE: get_config: Groups {0}'.format(returnValues))
         return returnValues
 
     def authorizeuser(self, hueBridgeId='0'):

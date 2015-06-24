@@ -1,7 +1,7 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 1.4 develop
+version 1.5 develop
 
 ## Supported Hardware
 Philips hue bridge, multiple bridges allowed
@@ -73,6 +73,11 @@ The numbers start with 0. There must be no missing number in between !
 Specify the lamp id. Via this parameter the right lamp on the hue connection is established.
 The numbers are the corresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
 hue_bridge_id attached to this item as well. If not, a default value of 0 will be set.
+
+### hue_group_id
+Specify the group id. Via this parameter the right group on the hue connection is established.
+The numbers are the corresponding numbers of the lgroup Id in the bridge. They normally start with 1. There must be a
+hue_bridge_id attached to this item as well. If not, a default value of 1 will be set.
 
 ### hue_lamp_type
 Specify the lamp type because of different color garamut parameters
@@ -206,6 +211,7 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
         # if hue_lamp_id and hue_bridge_id is not set, it is searched in a higher layer
         hue_lamp_id = 1
         hue_bridge_id = 0
+        hue_lamp_type = 0
         [[[bridge_name]]]
             type = str
             hue_listen = bridge_name
