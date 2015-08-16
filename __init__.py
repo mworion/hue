@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.5 develop
+#  Version 1.6 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -13,14 +13,14 @@
 #  Umsetzung rgb mit aufgenommen, basiert auf der einwegumrechnung von
 #  https://github.com/benknight/hue-python-rgb-converter 
 #
-#  Basiert aus der API 1.4 der Philips hue API spezifikation, die man unter
+#  Basiert aus der API 1.7 der Philips hue API spezifikation, die man unter
 #  http://www.developers.meethue.com/documentation/lights-api finden kann
 #
 #  APL2.0
 #
 #  Library for RGB / CIE1931 coversion ported from Bryan Johnson's JavaScript implementation:
 #  https://github.com/bjohnso5/hue-hacking
-# extesion to use differen triangle points depending of the type of the hue system
+#  extension to use differen triangle points depending of the type of the hue system
 # 
 
 import logging
@@ -85,13 +85,13 @@ class HUE():
         self._hueLampsLock = threading.Lock()
         self._hueBridgesLock = threading.Lock()
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
-        self._listenLampKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'swversion', 'ct']
+        self._listenLampKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'uniqueid', 'manufacturername', 'swversion', 'ct']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
-        self._sendLampKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct']
+        self._sendLampKeys = ['on', 'bri', 'bri_inc', 'sat','sat_inc', 'hue', 'hue_inc', 'effect', 'alert', 'col_r', 'col_g', 'col_b', 'ct', 'ct_inc']
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenGroupKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'ct']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
-        self._sendGroupKeys = ['on', 'bri', 'sat', 'hue', 'effect', 'alert', 'ct']
+        self._sendGroupKeys = ['on', 'bri','bri_inc', 'sat' ,'sat_inc', 'hue', 'hue_inc', 'effect', 'alert', 'ct', 'ct_inc']
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenBridgeKeys = ['bridge_name', 'zigbeechannel', 'mac', 'dhcp', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'swupdate', 'linkbutton', 'portalservices', 'portalconnection', 'portalstate', 'whitelist','errorstatus']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
@@ -101,7 +101,7 @@ class HUE():
         # hier ist die liste der einträge, für rgb gesetzt werden kann
         self._rgbKeys = ['col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für string
-        self._stringKeys = ['effect', 'alert', 'type', 'name', 'modelid', 'swversion', 'bridge_name', 'mac', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'portalconnection']
+        self._stringKeys = ['effect', 'alert', 'type', 'name', 'modelid', 'uniqueid', 'manufacturername', 'swversion', 'bridge_name', 'mac', 'ipaddress', 'netmask', 'gateway', 'UTC', 'localtime', 'timezone', 'bridge_swversion', 'apiversion', 'portalconnection']
         # hier ist die liste der einträge, für string
         self._boolKeys = ['on', 'reachable', 'linkbutton', 'portalservices', 'dhcp']
         # hier ist die liste der einträge, für string
@@ -110,14 +110,18 @@ class HUE():
         self._connErrors = ['Host is down', 'timed out', '[Errno 113] No route to host']
         # hier ist die liste der einträge, für wertebereich 0-255
         self._rangeInteger8 = ['bri', 'sat', 'col_r', 'col_g', 'col_b']
-        # hier ist die liste der einträge, für wertebereich 0-255
+        # hier ist die liste der einträge, für wertebereich -254 bis 254
+        self._rangeSignedInteger8 = ['bri_inc', 'sat_inc']
+        # hier ist die liste der einträge, für wertebereich 0 bis 65535
         self._rangeInteger16 = ['hue']
+        # hier ist die liste der einträge, für wertebereich -65534 bis 65534
+        self._rangeSignedInteger16 = ['hue_inc','ct_inc']
         # konfiguration farbumrechnung. es gibt im Moment 2 lampentypgruppen:
         # hue bulb the corners index 0 [0] für LivingColors Bloom, Aura and Iris index 1 [1]
-        self._numberHueLampTypes=2
-        self.Red = [XY(0.674, 0.322), XY(0.703, 0.296)]
-        self.Lime =[XY(0.408, 0.517), XY(0.214, 0.709)]
-        self.Blue =[XY(0.168, 0.041), XY(0.139, 0.081)]
+        self._numberHueLampTypes=3
+        self.Red = [XY(0.674, 0.322), XY(0.703, 0.296), XY(1.0, 0.0)]
+        self.Lime =[XY(0.408, 0.517), XY(0.214, 0.709), XY(0.703, 1.0)]
+        self.Blue =[XY(0.168, 0.041), XY(0.139, 0.081), XY(0.0, 0.0)]
         # Konfigurationen zur laufzeit
         # scheduler für das polling der status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
@@ -363,11 +367,17 @@ class HUE():
             if hueSend in self._rangeInteger8:
                 # werte dürfen zwischen 0 und 255 liegen
                 value = self._limit_range_int(value, 0, 255)    
+            if hueSend in self._rangeSignedInteger8:
+                # werte dürfen zwischen -254 und 254 liegen
+                value = self._limit_range_int(value, -254, 254)    
             if hueSend in self._rangeInteger16:
                 # hue darf zwischen 0 und 65535 liegen
                 value = self._limit_range_int(value, 0, 65535)    
+            if hueSend in self._rangeSignedInteger16:
+                # hue darf zwischen -65534 und 65534 liegen
+                value = self._limit_range_int(value, -65534, 65534)    
             if hueSend == 'ct':
-                # hue darf zwischen 0 und 65535 liegen
+                # ct darf zwischen 153 und 500 liegen
                 value = self._limit_range_int(value, 153, 500)
                 
             if hueLampIsOn:

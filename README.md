@@ -1,7 +1,8 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 1.5 develop
+version 1.6 develop
+Updated on v1.7 Hue API
 
 ## Supported Hardware
 Philips hue bridge, multiple bridges allowed
@@ -84,6 +85,7 @@ Specify the lamp type because of different color garamut parameters
 Default would be 0 if not defined. There are currently two groups of lamps:
 Group 0 consists of hue bulb lamps, there hue_lamp_type = 0
 Group 1 consists of LivingColors Bloom, Aura and Iris lamps, there hue_lamp_type = 1
+Group 2 consists of standard - non known type recommended by Philips, there hue_lamp_type = 2
 
 ## Commands and Parameters supported
 Please refer to the specs of the API 1.4 of the hue at http://www.developers.meethue.com/documentation/lights-api.
@@ -118,6 +120,8 @@ Attribute            Type   Range                           Readable    Writable
 'type'               str    text                            yes         no
 'name'               str    text                            yes         no
 'modelid'            str    text                            yes         no
+'uniqueid'           str    text                            yes         no
+'manufacturername'   str    text                            yes         no
 'swversion'          str    text                            yes         no
 </pre>
 
