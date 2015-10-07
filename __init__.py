@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.6 develop
+#  Version 1.7 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -82,8 +82,7 @@ class HUE():
         self._sendBridgeItems = {}
         self._listenBridgeItems = {}
         # locks für die absicherung
-        self._hueLampsLock = threading.Lock()
-        self._hueBridgesLock = threading.Lock()
+        self._hueLock = threading.Lock()
         # hier ist die liste der einträge, für die der status auf listen gesetzt werden kann
         self._listenLampKeys = ['on', 'bri', 'sat', 'hue', 'reachable', 'effect', 'alert', 'type', 'name', 'modelid', 'uniqueid', 'manufacturername', 'swversion', 'ct']
         # hier ist die liste der einträge, für die der status auf senden gesetzt werden kann
@@ -624,11 +623,12 @@ class HUE():
     def _set_lamp_state(self, hueBridgeId, hueLampId, state):
         # hier erfolgt das setzen des status einer lampe
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen
+        self._hueLock.acquire()
         returnValues = self._get_web_content(hueBridgeId, '/lights/%s/state' % hueLampId, 'PUT', json.dumps(state))
         if returnValues == None:
+            self._hueLock.release()
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
-        self._hueLampsLock.acquire()
         for hueObject in returnValues:
             for hueObjectStatus, hueObjectReturnString in hueObject.items():
                 if hueObjectStatus == 'success':
@@ -653,23 +653,24 @@ class HUE():
                                 self._listenLampItems[returnItem](value, 'HUE')
                 else:
                     logger.warning('HUE: hue_set_lamp_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
-        self._hueLampsLock.release()
+        self._hueLock.release()
 
     def _set_group_state(self, hueBridgeId, hueGroupId , state):
         # hier erfolgt das setzen des status einer gruppe im Moment ist nur der abruf einer szene implementiert
         # hier kommt der PUT request, um die stati an die hue bridge zu übertragen
+        self._hueLock.acquire()
         returnValues = self._get_web_content(hueBridgeId, '/groups/%s/action' % hueGroupId, 'PUT', json.dumps(state))
         if returnValues == None:
+            self._hueLock.release()
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
-        self._hueLampsLock.acquire()
+
         for hueObject in returnValues:
             for hueObjectStatus, hueObjectReturnString in hueObject.items():
                 if hueObjectStatus == 'success':
                     pass
                 else:
                     logger.warning('HUE: _set_group_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
-        self._hueLampsLock.release()
 
     def _update_lamps(self):
         # mache ich mit der API get all lights
@@ -677,11 +678,12 @@ class HUE():
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
+            self._hueLock.acquire()
             returnValues = self._get_web_content(hueBridgeId, '/lights')
             if returnValues == None:
+                self._hueLock.release()
                 return
             # schleife über alle gefundenen lampen
-            self._hueBridgesLock.acquire()
             for hueLampId, hueLampIdValues in returnValues.items():
                 # schleife über alle rückmeldungen der lampen.
                 # jetzt muss ich etwas tricksen, da die states eine ebene tiefer als die restlichen infos der lampe liegen
@@ -717,7 +719,7 @@ class HUE():
                                 else:
                                     # bei allen anderen kann zurückgeschrieben werden
                                     self._listenLampItems[returnItem](value, 'HUE')
-            self._hueBridgesLock.release()
+            self._hueLock.release()
             numberBridgeId = numberBridgeId + 1
 
     def _update_groups(self):
@@ -726,11 +728,12 @@ class HUE():
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
+            self._hueLock.acquire()
             returnValues = self._get_web_content(hueBridgeId, '/groups')
             if returnValues == None:
+                self._hueLock.release()
                 return
             # schleife über alle gefundenen lampen
-            self._hueBridgesLock.acquire()
             for hueGroupId, hueGroupIdValues in returnValues.items():
                 # schleife über alle rückmeldungen der lampen.
                 # jetzt muss ich etwas tricksen, da die states eine ebene tiefer als die restlichen infos der lampe liegen
@@ -766,7 +769,7 @@ class HUE():
                                 else:
                                     # bei allen anderen kann zurückgeschrieben werden
                                     self._listenLampItems[returnItem](value, 'HUE')
-            self._hueBridgesLock.release()
+            self._hueLock.release()
             numberBridgeId = numberBridgeId + 1
 
     def _update_bridges(self):
@@ -774,11 +777,12 @@ class HUE():
         numberBridgeId = 0
         while numberBridgeId < self._numberHueBridges:
             hueBridgeId = str(numberBridgeId)
+            self._hueLock.acquire()
             returnValues = self._get_web_content(hueBridgeId, '/config')
             if returnValues == None:
+                self._hueLock.release()
                 return
             # schleife über alle gefundenen lampen
-            self._hueLampsLock.acquire()
             for hueObjectItem, hueObjectItemValue in returnValues.items():
                 # nachdem alle objekte und werte auf die gleiche ebene gebracht wurden, beginnt die zuordnung
                 # vor hier an werden die ganzen listen items durchgesehen und die werte aus der rückmeldung zugeordnet
@@ -801,7 +805,7 @@ class HUE():
                             value = int(hueObjectItemValue)
                         # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
                         self._listenBridgeItems[returnItem](value, 'HUE')
-            self._hueLampsLock.release()
+            self._hueLock.release()
             numberBridgeId = numberBridgeId + 1
 
     def get_config(self, hueBridgeId='0'):
