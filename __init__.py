@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015 Michael Würtenberger
 #
-#  Version 1.7 develop
+#  Version 1.71 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -739,36 +739,37 @@ class HUE():
                 # jetzt muss ich etwas tricksen, da die states eine ebene tiefer als die restlichen infos der lampe liegen
                 # in den items ist das aber eine flache hierachie. um nur eine schleife darüber zu haben, baue ich mir ein
                 # entsprechendes dict zusammen. 'state' ist zwar doppelt drin, stört aber nicht, da auch auf unterer ebene.
-                dictOptimized = hueGroupIdValues['state'].copy()
-                dictOptimized.update(returnValues[hueGroupId].items())
-                # jetzt kann der durchlauf beginnen
-                for hueObjectItem, hueObjectItemValue in dictOptimized.items():
-                    # nachdem alle objekte und werte auf die gleiche ebene gebracht wurden, beginnt die zuordnung
-                    # vor hier an werden die ganzen listen items durchgesehen und die werte aus der rückmeldung zugeordnet
-                    for returnItem in self._listenGroupItems:
-                        # wenn ein listen item angelegt wurde und dafür ein status zurückkam
-                        # verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
-                        if returnItem == (hueBridgeId + '.' + hueGroupId + '.' + hueObjectItem):
-                            # dafür wir der reale wert der hue bridge gesetzt
-                            if hueObjectItem in self._boolKeys:
-                                value = bool(hueObjectItemValue)
-                            elif hueObjectItem in self._stringKeys:
-                                value = str(hueObjectItemValue)
-                            else:
-                                value = int(hueObjectItemValue)
-                            # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
-                            if not self._listenGroupItems[returnItem]._fading:
-                                # es werden nur die Einträge zurückgeschrieben, falls die Lampe nich im fading betrieb ist
-                                if hueObjectItem == 'bri':
-                                    # bei brightness gibt es eine fallunterscheidung
-                                    if hueBridgeId + '.' + hueGroupId + '.on' in self._listenGroupItems:
-                                        # geht aber nur, wenn ein solches item vorhanden ist
-                                        if self._listenGroupItems[(hueBridgeId + '.' + hueGroupId + '.on')]():
-                                            # die brightness darf nur bei lamp = on zurückgeschrieben werden, den bei aus ist sie immer 0
-                                            self._listenGroupItems[returnItem](value, 'HUE')
+                if 'state' in hueGroupIdValues:
+                    dictOptimized = hueGroupIdValues['state'].copy()
+                    dictOptimized.update(returnValues[hueGroupId].items())
+                    # jetzt kann der durchlauf beginnen
+                    for hueObjectItem, hueObjectItemValue in dictOptimized.items():
+                        # nachdem alle objekte und werte auf die gleiche ebene gebracht wurden, beginnt die zuordnung
+                        # vor hier an werden die ganzen listen items durchgesehen und die werte aus der rückmeldung zugeordnet
+                        for returnItem in self._listenGroupItems:
+                            # wenn ein listen item angelegt wurde und dafür ein status zurückkam
+                            # verglichen wird mit dem referenzkey, der weiter oben aus lampid und state gebaut wurde
+                            if returnItem == (hueBridgeId + '.' + hueGroupId + '.' + hueObjectItem):
+                                # dafür wir der reale wert der hue bridge gesetzt
+                                if hueObjectItem in self._boolKeys:
+                                    value = bool(hueObjectItemValue)
+                                elif hueObjectItem in self._stringKeys:
+                                    value = str(hueObjectItemValue)
                                 else:
-                                    # bei allen anderen kann zurückgeschrieben werden
-                                    self._listenLampItems[returnItem](value, 'HUE')
+                                    value = int(hueObjectItemValue)
+                                # wenn der wert gerade im fading ist, dann nicht überschreiben, sonst bleibt es stehen !
+                                if not self._listenGroupItems[returnItem]._fading:
+                                    # es werden nur die Einträge zurückgeschrieben, falls die Lampe nich im fading betrieb ist
+                                    if hueObjectItem == 'bri':
+                                        # bei brightness gibt es eine fallunterscheidung
+                                        if hueBridgeId + '.' + hueGroupId + '.on' in self._listenGroupItems:
+                                            # geht aber nur, wenn ein solches item vorhanden ist
+                                            if self._listenGroupItems[(hueBridgeId + '.' + hueGroupId + '.on')]():
+                                                # die brightness darf nur bei lamp = on zurückgeschrieben werden, den bei aus ist sie immer 0
+                                                self._listenGroupItems[returnItem](value, 'HUE')
+                                    else:
+                                        # bei allen anderen kann zurückgeschrieben werden
+                                        self._listenLampItems[returnItem](value, 'HUE')
             self._hueLock.release()
             numberBridgeId = numberBridgeId + 1
 
