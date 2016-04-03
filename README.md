@@ -1,10 +1,13 @@
 # Phillips HUE
 
-###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015
-version 1.0 master
+###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015, 2016
+version 1.8 developNG
+Development Repo and examples for smartvisu widget under https://github.com/mworion/hue.git
+Pleas take into account that the some of the parameters changed for the plugin.conf !
 
-# Requirements
-Needs httplib, rgb_cie from https://github.com/benknight/hue-python-rgb-converter in plugin directory
+## Needed Modules
+From smarthomeNG: tools.py
+(this branch doesn't work with mknx/smarthome !) 
 
 ## Supported Hardware
 Philips hue bridge, multiple bridges allowed
@@ -16,9 +19,9 @@ Typical configuration for 3 bridges
 [HUE]
     class_name = HUE
     class_path = plugins.hue
-    hue_user = 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8, 38f625a739562a8bd261ab9c7f5e62c8
-    hue_ip = 192.168.2.2,192.168.2.3,192.168.2.4
-    hue_port = 80,80,80
+    hue_user = 38f625a739562a8bd261ab9c7f5e62c8|38f625a739562a8bd261ab9c7f5e62c8|38f625a739562a8bd261ab9c7f5e62c8
+    hue_ip = 192.168.2.2|192.168.2.3|192.168.2.4
+    hue_port = 80|80|80
     cycle_lamps = 3
     cycle_bridges = 30
     default_transitionTime = 0.4
@@ -35,20 +38,20 @@ Minimal configuration for single bridge an default settings
 ### hue_user
 A user name for the hue bridge. Usually this is a hash value of 32 hexadecimal digits.
 If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
-All users are separated with comma (',') !
+All users are separated with pipe ('|') !
 If the user/hash is not yet authorized, you can use sh.hue.authorizeuser() (via interactive shell or via logic)
 to authorize it. The link button must be pressed before.
 
 ### hue_ip
 IP or host name of the hue bridge. There is no default, please us a valid ip address.
 If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
-All ip's are separated with comma (',') !
+All ip's are separated with pipe ('|') !
 
 ### hue_port
 Port number of the hue bridge. 
 Default 80. Normally there is no need to change that.
 If you would like to use more than on bridge, you have to specify all ip addresses, ports and users accordingly.
-All ports are separated with comma (',') !
+All ports are separated with pipe ('|') !
 
 ### cycle_lamps
 Cycle in seconds to how often update the state of the lights in smarthome.
@@ -76,6 +79,17 @@ The numbers start with 0. There must be no missing number in between !
 Specify the lamp id. Via this parameter the right lamp on the hue connection is established.
 The numbers are the corresponding numbers of the lamp Id in the bridge. They normally start with 0. There must be a
 hue_bridge_id attached to this item as well. If not, a default value of 0 will be set.
+
+### hue_group_id
+Specify the group id. Via this parameter the right group on the hue connection is established.
+The numbers are the corresponding numbers of the lgroup Id in the bridge. They normally start with 1. There must be a
+hue_bridge_id attached to this item as well. If not, a default value of 1 will be set.
+
+### hue_lamp_type
+Specify the lamp type because of different color garamut parameters
+Default would be 0 if not defined. There are currently two groups of lamps:
+Group 0 consists of hue bulb lamps, there hue_lamp_type = 0
+Group 1 consists of LivingColors Bloom, Aura and Iris lamps, there hue_lamp_type = 1
 
 ## Commands and Parameters supported
 Please refer to the specs of the API 1.4 of the hue at http://www.developers.meethue.com/documentation/lights-api.
@@ -203,6 +217,7 @@ In addition to hue_dim_max this parameter has to be set. If not a warning will b
         # if hue_lamp_id and hue_bridge_id is not set, it is searched in a higher layer
         hue_lamp_id = 1
         hue_bridge_id = 0
+        hue_lamp_type = 0
         [[[bridge_name]]]
             type = str
             hue_listen = bridge_name
