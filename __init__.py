@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015,2016 Michael Würtenberger
 #
-#  Version 1.8 develop
+#  Version 1.81 develop
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -67,7 +67,7 @@ class HUE():
         self._cycle_bridges = int(cycle_bridges)
         if self._cycle_bridges < 10:
             # beschränkung der wiederholrate 
-            self._cycle_lamps = 10
+            self._cycle_bridges = 10
         self._hueDefaultTransitionTime = float(default_transitionTime)
         if self._hueDefaultTransitionTime < 0:
             # beschränkung der wiederholrate 
@@ -124,12 +124,12 @@ class HUE():
         self.Lime =[XY(0.408, 0.517), XY(0.214, 0.709), XY(0.703, 1.0)]
         self.Blue =[XY(0.168, 0.041), XY(0.139, 0.081), XY(0.0, 0.0)]
         # Konfigurationen zur laufzeit
-        # scheduler für das polling der status der lampen über die hue bridge
+        # scheduler für das polling des status der lampen über die hue bridge
         self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
-        # scheduler für das polling der status der lampen über die hue bridge
+        # scheduler für das polling des status der lampen über die hue bridge
         # cycle groups ist gleich dem cycle für die lamps
         self._sh.scheduler.add('hue-update-groups', self._update_groups, cycle = self._cycle_lamps)
-        # scheduler für das polling der status der hue bridge
+        # scheduler für das polling des status der hue bridge
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
 
     ### following the library parts of the rewritten topics
