@@ -1,13 +1,8 @@
 # Phillips HUE
 
 ###New development of Hue plugin for use in smarthome.py (C) Michael Würtenberger 2014, 2015, 2016
-version 1.8 developNG
+version 1.82 developNG
 Development Repo and examples for smartvisu widget under https://github.com/mworion/hue.git
-Pleas take into account that the some of the parameters changed for the plugin.conf !
-
-## Needed Modules
-From smarthomeNG: tools.py
-(this branch doesn't work with mknx/smarthome !) 
 
 ## Supported Hardware
 Philips hue bridge, multiple bridges allowed

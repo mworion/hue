@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015,2016 Michael Würtenberger
 #
-#  Version 1.81 develop
+#  Version 1.82 developNG
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
@@ -13,7 +13,7 @@
 #  Umsetzung rgb mit aufgenommen, basiert auf der einwegumrechnung von
 #  https://github.com/benknight/hue-python-rgb-converter 
 #
-#  Basiert aus der API 1.7 der Philips hue API spezifikation, die man unter
+#  Basiert aus der API 1.11 der Philips hue API spezifikation, die man unter
 #  http://www.developers.meethue.com/documentation/lights-api finden kann
 #
 #  APL2.0
@@ -38,7 +38,7 @@ client = Tools()
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '10', cycle_bridges = '60', default_transitionTime = '0.4'):
+    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lampsGroups = '10', cycle_bridges = '60', default_transitionTime = '0.4'):
 
         # parameter zu übergabe aus der konfiguration pulgin.conf
         self._sh = smarthome
@@ -60,10 +60,10 @@ class HUE():
         if '' in self._hue_port:
             logger.error('HUE: Error in plugin.conf: you have to specify all hue_port')
             raise Exception('HUE: Plugin stopped due to configuration fault in plugin.conf') 
-        self._cycle_lamps = int(cycle_lamps)
-        if self._cycle_lamps < 5:
+        self._cycle_lampsGroups = int(cycle_lampsGroups)
+        if self._cycle_lampsGroups < 5:
             # beschränkung der wiederholrate 
-            self._cycle_lamps = 5
+            self._cycle_lampsGroups = 5
         self._cycle_bridges = int(cycle_bridges)
         if self._cycle_bridges < 10:
             # beschränkung der wiederholrate 
@@ -107,8 +107,6 @@ class HUE():
         self._boolKeys = ['on', 'reachable', 'linkbutton', 'portalservices', 'dhcp']
         # hier ist die liste der einträge, für string
         self._dictKeys = ['portalstate', 'swupdate', 'whitelist']
-        # hier die abgefangenen fehlermeldungen in den connections, die auf das fehleritem gemapped werden
-        self._connErrors = ['Host is down', 'timed out', '[Errno 113] No route to host']
         # hier ist die liste der einträge, für wertebereich 0-255
         self._rangeInteger8 = ['bri', 'sat', 'col_r', 'col_g', 'col_b']
         # hier ist die liste der einträge, für wertebereich -254 bis 254
@@ -125,10 +123,9 @@ class HUE():
         self.Blue =[XY(0.168, 0.041), XY(0.139, 0.081), XY(0.0, 0.0)]
         # Konfigurationen zur laufzeit
         # scheduler für das polling des status der lampen über die hue bridge
-        self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lamps)
+        self._sh.scheduler.add('hue-update-lamps', self._update_lamps, cycle = self._cycle_lampsGroups)
         # scheduler für das polling des status der lampen über die hue bridge
-        # cycle groups ist gleich dem cycle für die lamps
-        self._sh.scheduler.add('hue-update-groups', self._update_groups, cycle = self._cycle_lamps)
+        self._sh.scheduler.add('hue-update-groups', self._update_groups, cycle = self._cycle_lampsGroups)
         # scheduler für das polling des status der hue bridge
         self._sh.scheduler.add('hue-update-bridges', self._update_bridges, cycle = self._cycle_bridges)
 
@@ -610,13 +607,13 @@ class HUE():
             self._hueLock.release()
             return
         # der aufruf liefert eine bestätigung zurück, was den numgesetzt werden konnte
-
         for hueObject in returnValues:
             for hueObjectStatus, hueObjectReturnString in hueObject.items():
                 if hueObjectStatus == 'success':
                     pass
                 else:
                     logger.warning('HUE: _set_group_state - hueObjectStatus no success:: {0}: {1} command state {2}'.format(hueObjectStatus, hueObjectReturnString, state))
+        self._hueLock.release()
 
     def _update_lamps(self):
         # mache ich mit der API get all lights
