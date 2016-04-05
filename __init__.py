@@ -38,7 +38,7 @@ client = Tools()
 
 class HUE():
 
-    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lampsGroups = '10', cycle_bridges = '60', default_transitionTime = '0.4'):
+    def __init__(self, smarthome, hue_ip = '', hue_user = '', hue_port = '80', cycle_lamps = '10', cycle_bridges = '60', default_transitionTime = '0.4'):
 
         # parameter zu übergabe aus der konfiguration pulgin.conf
         self._sh = smarthome
@@ -60,7 +60,7 @@ class HUE():
         if '' in self._hue_port:
             logger.error('HUE: Error in plugin.conf: you have to specify all hue_port')
             raise Exception('HUE: Plugin stopped due to configuration fault in plugin.conf') 
-        self._cycle_lampsGroups = int(cycle_lampsGroups)
+        self._cycle_lampsGroups = int(cycle_lamps)
         if self._cycle_lampsGroups < 5:
             # beschränkung der wiederholrate 
             self._cycle_lampsGroups = 5
@@ -71,7 +71,7 @@ class HUE():
         self._hueDefaultTransitionTime = float(default_transitionTime)
         if self._hueDefaultTransitionTime < 0:
             # beschränkung der wiederholrate 
-            logger.warning('HUE: Error in plugin.conf: the default_transitionTime paremeter cannot be negative. It is set to 0')
+            logger.warning('HUE: Error in plugin.conf: the default_transitionTime parameter cannot be negative. It is set to 0')
             self._hueDefaultTransitionTime = 0
         # variablen zur steuerung des plugins
         # hier werden alle bekannte items für lampen eingetragen
