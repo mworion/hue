@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2014,2015,2016 Michael Würtenberger
 #
-#  Version 1.82 developNG
+#  Version 1.83 developNG
 #
 #  Erstanlage mit ersten Tests
 #  Basiert auf den Ueberlegungen des verhandenen Hue Plugins.
