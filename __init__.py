@@ -221,7 +221,6 @@ class HUE():
         if itemAttribute >= attributeLimit:
             itemAttribute = attributeLimit
             logger.warning('HUE: _find_item_attribute: attribute [{0}] exceeds upper limit and set to default in item [{1}]'.format(attribute,item))
-#        logger.warning('HUE: _find_item_attribute: attribute [{0}] found for item [{1}] at item [{2}]'.format(attribute, item, itemSearch))
         return str(itemAttribute)
     
     def parse_item(self, item):
@@ -544,7 +543,7 @@ class HUE():
             errorItem = None
             logger.warning(hueBridgeId)
         # dann der aufruf kompatibel, aber inhaltlich nicht identisch fetch_url aus lib.tools, daher erst eimal das fehlerobjekt nicht mehr da
-        response = client.fetch_url(url, None, None, 2, 1, method, body, errorItem)
+        response = client.fetch_url(url, None, None, 2, 0, method, body, errorItem)
         if response:
             # und jetzt der anteil der decodierung, der nicht in der fetch_url drin ist
             # lesen, decodieren nach utf-8 (ist pflicht nach der api definition philips) und in ein python objekt umwandeln
